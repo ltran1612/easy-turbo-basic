@@ -1264,7 +1264,7 @@ impl App {
         }
         egui::ScrollArea::vertical().show(ui, |ui| {
             // What the translator found comes first: all of it is known before
-            // QB64 runs, and QB64 only ever reports one error.
+            // the compiler runs, and its errors are about the translated copy.
             for f in &findings {
                 let (color, kind) = match f.severity {
                     FindingSeverity::Refuse => {

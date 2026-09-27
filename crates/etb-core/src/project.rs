@@ -17,8 +17,11 @@ pub struct BuildOptions {
     /// On by default. Double-clicking the program in Explorer is what a person
     /// who has never used a terminal will do, and a window that closes the
     /// moment the results are printed looks like a program that did nothing.
-    /// QB64 already shows "Press any key to continue" at `END`; turning this
-    /// off makes the program close straight away instead.
+    /// FreeBASIC ends a program the moment it reaches `END`, so the wait is put
+    /// in by the translator (`translate::prelude_text`); turning this off leaves
+    /// it out and the program closes straight away. Nothing is printed with the
+    /// wait: a program that drew a graph would have it scrolled away by the
+    /// prompt.
     pub keep_window_open: bool,
 }
 
@@ -217,7 +220,7 @@ impl Program {
 /// Names that could be mistaken for something other than a file name are
 /// refused when they are added, rather than escaped later.
 ///
-/// QB64 takes the source file as an argument, and a name starting with `-` is
+/// `fbc` takes the source file as an argument, and a name starting with `-` is
 /// read as one of its options.
 pub fn validate_user_path(path: &Path) -> Result<(), crate::error::EtbError> {
     use crate::error::EtbError;

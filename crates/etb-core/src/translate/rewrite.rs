@@ -3,7 +3,8 @@
 //! Each rule looks at one statement and produces edits: byte ranges of the
 //! original line and what to put there. Edits never span lines, which is what
 //! keeps every staged line on the same line number as the user's. The one
-//! thing that cannot stay on its line — a single-line `DEF FN`, since QB64 has
+//! thing that cannot stay on its line — a single-line `DEF FN`, since FreeBASIC
+//! has
 //! no single-line FUNCTION — is removed from it and rebuilt after the user's
 //! last line, with the line map saying where it came from.
 
@@ -364,7 +365,7 @@ impl<'p, 'a> Rewriter<'p, 'a> {
     }
 
     /// Edits that apply to single tokens wherever they are: calls to the
-    /// program's own functions, and Turbo Basic's own functions that QB64
+    /// program's own functions, and Turbo Basic's own functions that FreeBASIC
     /// spells differently or lacks. With `explicit`, names without a suffix
     /// get the one their DEFtype gives them, for code that is being moved.
     fn tokens(
@@ -384,7 +385,7 @@ impl<'p, 'a> Rewriter<'p, 'a> {
                 let text = toks[k].text(l.text);
                 if is_variable(l.text, toks, k)
                     && deftype::Ty::from_suffix(*text.last().unwrap_or(&b'x')).is_none()
-                    && !keywords::is_qb64_only(&String::from_utf8_lossy(text))
+                    && !keywords::is_fb_only(&String::from_utf8_lossy(text))
                 {
                     let ty = l.types.of_letter(text[0]);
                     edits.push(Edit::insert(toks[k].end, ty.suffix().to_string()));
@@ -437,7 +438,7 @@ impl<'p, 'a> Rewriter<'p, 'a> {
             }
             if let Some((f, len)) = prog.fn_at(i, k) {
                 let last = &toks[k + len - 1];
-                let name = f.qb64_name();
+                let name = f.fb_name();
                 // The name in its own header is renamed, not called: its
                 // brackets hold parameters, not arguments.
                 let header = f.line == i && f.name.0 == k;
@@ -485,7 +486,7 @@ impl<'p, 'a> Rewriter<'p, 'a> {
                     }
                 }
                 // `LBOUND(a(2))`, Turbo Basic's way to name a dimension, is
-                // `LBOUND(a, 2)` in QB64.
+                // `LBOUND(a, 2)` in FreeBASIC.
                 b"LBOUND" | b"UBOUND" if is_call => {
                     if let [_, arr, inner, n, close, ..] = &toks[k + 1..] {
                         if arr.kind == Kind::Ident
@@ -559,7 +560,7 @@ impl<'p, 'a> Rewriter<'p, 'a> {
             }
         }
 
-        let name = f.qb64_name();
+        let name = f.fb_name();
         let signature = if params.is_empty() {
             name.clone()
         } else {
@@ -611,14 +612,14 @@ impl<'p, 'a> Rewriter<'p, 'a> {
         }
         self.declarations.push(format!(
             "DECLARE FUNCTION {} ({})",
-            f.qb64_name(),
+            f.fb_name(),
             f.params
                 .iter()
                 .map(|p| format!("BYVAL {}", typed_name(&p.base, p.ty)))
                 .collect::<Vec<_>>()
                 .join(", ")
         ));
-        // A line number on the header: QB64 does not allow one before
+        // A line number on the header: FreeBASIC does not allow one before
         // FUNCTION. Nothing may jump to it — the handbook forbids jumping into
         // a definition — so it goes, unless something does jump to it.
         if let Some(n) = toks.first().filter(|t| t.kind == Kind::LineNumber) {
@@ -728,7 +729,7 @@ impl<'p, 'a> Rewriter<'p, 'a> {
     }
 
     /// `LOCAL a, b%, arr()` → `DIM a, b%`. A local array is dimensioned by a
-    /// DIM of its own later, which in a QB64 procedure is local already.
+    /// DIM of its own later, which in a FreeBASIC procedure is local already.
     fn local_to_dim(&mut self, i: usize, s: Stmt) -> Option<String> {
         let prog = self.prog;
         let l = &prog.lines[i];
@@ -784,23 +785,25 @@ impl<'p, 'a> Rewriter<'p, 'a> {
     }
 }
 
-/// The name a variable gets when its own is a word QB64 reserves: ours, with
+/// The name a variable gets when its own is a word the compiler reserves: ours,
+/// with
 /// its type spelt out, because the new name starts with a different letter.
 fn collision_name(text: &[u8], types: &deftype::DefTypes) -> Option<String> {
     let (base, ty, _) = deftype::resolve(text, types, 0);
-    keywords::is_qb64_only(&base).then(|| format!("ETB_V_{base}{}", ty.suffix()))
+    keywords::is_fb_only(&base).then(|| format!("ETB_V_{base}{}", ty.suffix()))
 }
 
-/// `base` with its type spelt out, renamed if QB64 reserves it.
+/// `base` with its type spelt out, renamed if the compiler reserves it.
 fn typed_name(base: &str, ty: deftype::Ty) -> String {
-    if keywords::is_qb64_only(base) {
+    if keywords::is_fb_only(base) {
         format!("ETB_V_{base}{}", ty.suffix())
     } else {
         format!("{base}{}", ty.suffix())
     }
 }
 
-/// A name from an analysis list (`x`, `arr()`), renamed if QB64 reserves it.
+/// A name from an analysis list (`x`, `arr()`), renamed if the compiler reserves
+/// it.
 fn list_name(written: &str, types: &deftype::DefTypes) -> String {
     let (name, array) = match written.strip_suffix("()") {
         Some(n) => (n, "()"),
@@ -818,8 +821,8 @@ fn list_name(written: &str, types: &deftype::DefTypes) -> String {
     format!("{}{array}", typed_name(&base, ty))
 }
 
-/// `DIM DYNAMIC a(n)` is QB64's `REDIM a(n)`; `DIM STATIC` is its `DIM`; and
-/// Turbo Basic's bounds, `a(1:10)`, are QB64's `a(1 TO 10)`.
+/// `DIM DYNAMIC a(n)` is FreeBASIC's `REDIM a(n)`; `DIM STATIC` is its `DIM`; and
+/// Turbo Basic's bounds, `a(1:10)`, are FreeBASIC's `a(1 TO 10)`.
 fn dim(line: &[u8], toks: &[Token], edits: &mut Vec<Edit>) {
     match toks.get(1) {
         Some(t) if t.is_word(line, "DYNAMIC") => {
@@ -1080,8 +1083,9 @@ fn remove_statement(toks: &[Token], s: Stmt) -> Vec<Edit> {
     out
 }
 
-/// `?` → `PRINT`. QB64 accepts `?` only in some positions; the word is
-/// accepted in all of them.
+/// `?` → `PRINT`. `fbc -lang qb` does accept `?` where a statement begins
+/// (measured), but not everywhere Turbo Basic did, and the spelt-out word is
+/// accepted in every one of those places.
 fn question(line: &[u8], q: &Token, edits: &mut Vec<Edit>) {
     let glued = line.get(q.end).is_some_and(|&b| b != b' ' && b != b'\t');
     edits.push(Edit::replace(q, if glued { "PRINT " } else { "PRINT" }));
@@ -1104,7 +1108,7 @@ fn strip_hash(toks: &[Token]) -> &[Token] {
 ///
 /// At run time, because the name is usually in a variable: `F$ = "LPT1"` a
 /// few lines up, or typed by the user. `OPEN "LPT1" ...` cannot work on a
-/// machine with no parallel port, and QB64 does not open devices at all.
+/// machine with no parallel port, and FreeBASIC does not open devices at all.
 ///
 /// Both of Turbo Basic's spellings are handled:
 ///   `OPEN name FOR mode AS [#]n [LEN = r]` and `OPEN mode, [#]n, name [, r]`.
@@ -1446,7 +1450,7 @@ mod tests {
     }
 
     #[test]
-    fn exit_forms_that_qb64_spells_differently() {
+    fn exit_forms_that_freebasic_spells_differently() {
         assert_eq!(rewrite("EXIT LOOP"), "EXIT DO");
         assert_eq!(rewrite("EXIT FOR"), "EXIT FOR");
         assert_eq!(rewrite("EXIT SELECT"), "EXIT SELECT");
@@ -1459,7 +1463,7 @@ mod tests {
     }
 
     #[test]
-    fn turbo_basic_functions_qb64_spells_differently() {
+    fn turbo_basic_functions_freebasic_spells_differently() {
         assert_eq!(rewrite("x = CEIL(y)"), "x = ETB_CEIL#(y)");
         assert_eq!(rewrite("b$ = BIN$(n)"), "b$ = ETB_BIN$(n)");
         assert_eq!(rewrite("p = LOG10(x * 2)"), "p = ETB_LOG10#(x * 2)");
@@ -1547,7 +1551,7 @@ mod tests {
     }
 
     #[test]
-    fn a_variable_named_after_a_qb64_word_is_renamed_everywhere() {
+    fn a_variable_named_after_a_reserved_word_is_renamed_everywhere() {
         let (out, moved, _) = run(
             "DEFINT T\ntype = 3: long# = 1.5\nDEF FNk(v) = v * type\nPRINT type, string$(3, \"*\")",
         );

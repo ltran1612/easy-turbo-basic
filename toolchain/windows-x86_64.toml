@@ -32,8 +32,12 @@ drop = [
   # FreeBASIC's own sample programs and its manual. A build opens neither, and
   # together they are most of the archive's file count.
   "examples/*",
-  "doc/*",
 ]
+# `doc/` is deliberately *not* dropped. It is 75 KB and holds the licence texts
+# FreeBASIC ships with its own binaries -- gpl.txt, lgpl.txt,
+# libffi-license.txt. Dropping it would mean distributing GPL binaries having
+# deleted the licence they came with, and the notice `cargo xtask package`
+# writes points a reader at those files by name.
 
 [mutable]
 # Nothing: fbc writes its output where it is told and leaves its own

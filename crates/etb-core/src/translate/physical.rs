@@ -1,6 +1,7 @@
 //! Splitting a source file into physical lines.
 //!
-//! Line numbers are the currency of everything downstream: QB64 reports errors
+//! Line numbers are the currency of everything downstream: the compiler reports
+//! errors
 //! by line, the saved program reports run-time errors by line, and the user
 //! finds the line in Notepad by counting. So this module has one job: produce
 //! exactly the lines a text editor would show, numbered the way it numbers them,
@@ -93,7 +94,7 @@ mod tests {
 
     #[test]
     fn lines_are_numbered_the_way_an_editor_numbers_them() {
-        // A leading blank line is line 1. The QB64 error that started this
+        // A leading blank line is line 1. The compiler error that started this
         // project was reported one line lower than a count that skipped it
         // would give.
         let p = split(b"\r\ncolor 14,1\r\nend\r\n");

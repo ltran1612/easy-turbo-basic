@@ -106,7 +106,20 @@ fi
 
 echo
 echo "== running the program it built =="
-(cd "$work" && wine ./tinhtoan.exe >/dev/null 2>&1 || true)
+# It was built with the default, which keeps the window open: `ETB_FINISH` ends
+# with a bare `SLEEP`, and on Windows that waits for a key whatever stdin is
+# (docs/verification.md, F5). So the program is *expected* to be still waiting
+# when the timeout fires -- that is the check -- and its files must already be
+# on disk, because `ETB_FINISH` closes and spools them before it waits.
+rc=0
+(cd "$work" && timeout 20 wine ./tinhtoan.exe >/dev/null 2>&1) || rc=$?
+if [ "$rc" = 124 ]; then
+  echo "  the window stayed open, waiting for a key"
+else
+  echo "FAIL: the program exited by itself (rc=$rc); a double-clicked program"
+  echo "      would print its results into a window that vanished"
+  fail=1
+fi
 for f in KETQUA.TXT MAY-IN-LPT1.TXT; do
   if [ -f "$work/$f" ]; then
     echo "  --- $f"

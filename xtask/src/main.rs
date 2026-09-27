@@ -375,14 +375,20 @@ fn check_hygiene() -> Result<()> {
             // explain why they are never passed do not trip over themselves.
             for (pat, why) in [
                 (
-                    "\"-s:",
-                    "-s: rewrites QB64-PE's own settings file, so every later build \
-                     would depend on it; pass the setting with -f: for one compile",
+                    "\"-i\"",
+                    "-i adds an include search path, so a program's $INCLUDE could \
+                     reach outside the staged copy that build/stage.rs assembled",
                 ),
                 (
                     "\"-p\"",
-                    "-p purges QB64-PE's prebuilt runtime, and every build after it \
-                     starts from nothing",
+                    "-p adds a library search path, so a program could link something \
+                     from outside the bundle the manifest attests",
+                ),
+                (
+                    "\"-s\"",
+                    "-s gui builds a program with no console, so everything it PRINTs \
+                     goes nowhere; the subsystem belongs in build/fbargs.rs, with a \
+                     test, if it is ever needed",
                 ),
             ] {
                 if line.contains(pat) && !exempt && !rel_str.ends_with("xtask/src/main.rs") {

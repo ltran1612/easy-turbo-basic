@@ -8,13 +8,14 @@ chạy. Nó không cần ứng dụng này để chạy.
 
 ## Cửa sổ
 
-Chương trình mở trong cửa sổ riêng, rộng 80 ký tự và cao 25 dòng, với màu sắc
-do chương trình của bạn chọn — giống như trên DOS. Đồ hoạ (`SCREEN`, `LINE`,
-`CIRCLE`) hiện ngay trong cửa sổ đó.
+Chương trình mở trong cửa sổ văn bản riêng, với màu sắc do chương trình của
+bạn chọn — giống như trên DOS. Chương trình có vẽ hình (`SCREEN`, `LINE`,
+`CIRCLE`) sẽ mở thêm một cửa sổ nữa để vẽ.
 
-Khi chương trình kết thúc, cửa sổ vẫn mở với dòng **Press any key to
-continue** để bạn kịp đọc kết quả. Tuỳ chọn *Chờ nhấn phím trước khi đóng cửa
-sổ* dùng để tắt việc này.
+Khi chương trình kết thúc, cửa sổ vẫn mở cho đến khi bạn nhấn một phím, để bạn
+kịp đọc kết quả. Không có chữ nào in thêm lên màn hình mà chương trình để lại,
+nên đồ thị vẫn nguyên như lúc vẽ. Tuỳ chọn *Chờ nhấn phím trước khi đóng cửa
+sổ* dùng để tắt việc chờ này.
 
 ## Các tệp chương trình tạo ra nằm ở đâu
 

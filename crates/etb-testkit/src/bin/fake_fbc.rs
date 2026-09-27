@@ -1,10 +1,11 @@
-//! A stand-in for QB64-PE.
+//! A stand-in for `fbc`.
 //!
 //! This is what lets the whole build state machine — translation, staging,
 //! error mapping, output caps, cancellation, saving — be tested on a machine
-//! with no QB64 installed.
+//! with no FreeBASIC installed.
 //!
-//! QB64-PE runs in its own directory, which for this fake is shared by every
+//! The compiler runs in its own directory, which for this fake is shared by
+//! every
 //! test, so its instructions cannot live there. They live beside the build
 //! tree it is handed: the staged program is `<build>/src/prog.bas`, and the
 //! markers are read from `<build>/`. Tests stay parallel-safe that way.
@@ -16,7 +17,8 @@
 //!   the built program, so a saved program can be run.
 //!
 //! In `syntax` mode the error is reported on the first staged line containing
-//! `ERROR_HERE`, in exactly the shape QB64-PE 4.6 prints with `-q -m`.
+//! `ERROR_HERE`, in exactly the shape `fbc` 1.10.1 prints it:
+//! `FILE(LINE) error N: message`.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -106,7 +108,7 @@ fn main() {
             touch(out.as_deref());
         }
         // Produce something that can actually be executed, so saving and
-        // running a built program can be tested with no QB64 at all.
+        // running a built program can be tested with no FreeBASIC at all.
         "interactive" => {
             let program = read_marker(&build_root, "FAKE_PROGRAM")
                 .expect("FAKE_PROGRAM marker must name the program");

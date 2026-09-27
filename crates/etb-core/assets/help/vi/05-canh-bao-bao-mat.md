@@ -15,8 +15,8 @@ Windows chưa nhận ra nó.
 
 ## Phần mềm diệt virus xoá một phần trình biên dịch
 
-Trình biên dịch gồm nhiều chương trình nhỏ, trong đó có `qb64pe.exe`,
-`clang.exe` và `mingw32-make.exe`. Đôi khi một số phần mềm diệt virus nhầm
+Trình biên dịch gồm nhiều chương trình nhỏ, trong đó có `fbc.exe`,
+`gcc.exe` và `ld.exe`. Đôi khi một số phần mềm diệt virus nhầm
 chúng là thứ nguy hiểm và xoá đi — và điều tương tự cũng có thể xảy ra với
 chương trình bạn đã tạo và lưu. Đây là một lỗi nhận nhầm đã được biết từ lâu.
 

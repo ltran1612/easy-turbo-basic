@@ -1,7 +1,7 @@
 //! Is this file actually BASIC source text?
 //!
-//! Handed a file that is not source at all, QB64 does not say so: it reports
-//! "Syntax error" on line 1 and stops. That is worse than useless in front of
+//! Handed a file that is not source at all, the compiler does not say so: it
+//! reports a syntax error on line 1 and carries on reporting them. That is worse than useless in front of
 //! someone who did not write the error — nothing in it says "this is not a
 //! program". So a file is judged before anything else looks at it, and the
 //! ones we can recognise are named, because naming one tells the user what to
@@ -85,8 +85,8 @@ impl NotSource {
             NotSource::GwProtected => "a GW-BASIC program saved protected (,P). PC-BASIC can \
                  load it and SAVE it again with ,A to get text."
                 .into(),
-            NotSource::QbBinary => "a QuickBASIC 4.x binary save. Open it in QuickBASIC or \
-                 QB64 and save it as text."
+            NotSource::QbBinary => "a QuickBASIC 4.x binary save. Open it in QuickBASIC \
+                 itself and save it as text (File, Save As, Text)."
                 .into(),
             NotSource::Binary => "not a text file, so it cannot be BASIC source.".into(),
         }

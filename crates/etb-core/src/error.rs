@@ -52,7 +52,7 @@ pub enum EtbError {
     #[error("source file name is not usable: {reason}")]
     UnsafeSourceName { reason: String },
 
-    #[error("no QB64 Phoenix Edition compiler (fbc) could be found")]
+    #[error("no FreeBASIC compiler (fbc) could be found")]
     ToolchainMissing,
 
     #[error("toolchain at {path} failed verification: {reason}")]

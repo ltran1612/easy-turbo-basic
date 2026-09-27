@@ -228,10 +228,24 @@ const RESERVED: &[&str] = &[
     "XOR",
 ];
 
-/// Words QB64 reserves that Turbo Basic does not, so a Turbo Basic program may
-/// use them as names: `type$ = "A"`, `long = 12.5`. QB64 would stop at each.
-/// (`STRING$` is Turbo Basic's function; a variable `string` is not.)
-const QB64_ONLY: &[&str] = &[
+/// Words the compiler reserves that Turbo Basic does not, so a Turbo Basic
+/// program may well use them as names: `type$ = "A"`, `long = 12.5`. The
+/// compiler would stop at each. (`STRING$` is Turbo Basic's function; a
+/// variable `string` is not.)
+///
+/// Measured against `fbc -lang qb` 1.10.1, one assignment per word: it reserves
+/// ten of these — ALIAS, ANY, BYVAL, CDECL, CONST, DECLARE, DOUBLE, FREEFILE,
+/// FUNCTION, INTEGER — and accepts the rest as names. The others are kept
+/// because a word can be free as an assignment target and still bite in an
+/// expression, and because renaming one that did not need it costs nothing: the
+/// name becomes `ETB_V_*` throughout and the program means the same. A word
+/// missing from here is the failure that matters, and there is none.
+///
+/// The same measurement says `-lang qb` leaves FreeBASIC's own extended
+/// keywords free — `BYTE`, `VAR`, `SCOPE`, `ENUM`, `UNION`, `PTR` and the rest
+/// are all usable as names — which is one more reason that dialect is the one
+/// this application compiles with.
+const FB_ONLY: &[&str] = &[
     "ALIAS",
     "ANY",
     "BYVAL",
@@ -261,10 +275,10 @@ const QB64_ONLY: &[&str] = &[
     "UNLOCK",
 ];
 
-/// Is this name, without its suffix, a word QB64 reserves and Turbo Basic
-/// does not?
-pub fn is_qb64_only(base: &str) -> bool {
-    QB64_ONLY.iter().any(|w| base.eq_ignore_ascii_case(w))
+/// Is this name, without its suffix, a word the compiler reserves and Turbo
+/// Basic does not?
+pub fn is_fb_only(base: &str) -> bool {
+    FB_ONLY.iter().any(|w| base.eq_ignore_ascii_case(w))
 }
 
 pub fn is_reserved(word: &[u8]) -> bool {
@@ -288,16 +302,16 @@ mod tests {
     }
 
     #[test]
-    fn qb64_only_words_are_not_turbo_basic_words() {
-        for w in QB64_ONLY {
+    fn reserved_words_are_not_turbo_basic_words() {
+        for w in FB_ONLY {
             assert!(
                 !is_reserved(w.as_bytes()),
                 "{w} is reserved in Turbo Basic too"
             );
         }
-        let mut sorted = QB64_ONLY.to_vec();
+        let mut sorted = FB_ONLY.to_vec();
         sorted.sort_unstable();
-        assert_eq!(sorted, QB64_ONLY, "keep the list sorted");
+        assert_eq!(sorted, FB_ONLY, "keep the list sorted");
     }
 
     #[test]

@@ -131,7 +131,7 @@ kept its settings beside itself — and the machinery is kept for the next
 compiler that does.
 
 **A damaged bundle is never replaced by whatever is on PATH.** `discover` falls
-through to a `qb64pe` on PATH only when no bundle was shipped at all; a bundle
+through to an `fbc` on PATH only when no bundle was shipped at all; a bundle
 that is present and will not load is reported as a damaged installation.
 
 **The environment is built, not inherited.** On x86-64 `fbc` translates to C

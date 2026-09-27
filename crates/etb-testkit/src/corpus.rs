@@ -47,7 +47,7 @@ pub struct Expect {
     pub finding_keys: Vec<String>,
     /// Run in its own window on a virtual screen, as the user would see it,
     /// rather than in the console; then look at the screenshot it leaves.
-    /// Needs `xvfb-run` and a QB64-PE that runs on this machine.
+    /// Needs `xvfb-run` and an `fbc` that runs on this machine.
     pub window: bool,
     /// The screenshot's size in pixels.
     pub screen_size: Option<(u32, u32)>,
@@ -122,7 +122,7 @@ pub fn toolchain() -> Option<Toolchain> {
                 panic!("ETB_REQUIRE_TOOLCHAIN=1 but no compiler was found: {e}");
             }
             eprintln!("SKIPPING the corpus: {e}");
-            eprintln!("  point ETB_TOOLCHAIN_BUNDLE at a QB64-PE bundle to run it");
+            eprintln!("  point ETB_TOOLCHAIN_BUNDLE at a FreeBASIC bundle to run it");
             None
         }
     }
@@ -163,13 +163,13 @@ pub fn run_case(
     if case.expect.window && !can_run_windows(tc) {
         // Driven through a launcher (wine), a program's window cannot be put
         // on a virtual screen here: that is how the arrangement is, not a
-        // fault. A native QB64-PE with no xvfb-run is a machine missing a
+        // fault. A native `fbc` with no xvfb-run is a machine missing a
         // package, and with a compiler required, that is worth failing on.
         if tc.launcher().is_none() && std::env::var("ETB_REQUIRE_TOOLCHAIN").as_deref() == Ok("1") {
             return Err("a window case needs xvfb-run".into());
         }
         eprintln!(
-            "  SKIPPING {}: needs xvfb-run and a native QB64-PE",
+            "  SKIPPING {}: needs xvfb-run and a native FreeBASIC",
             case.name
         );
         return Ok(());
@@ -182,7 +182,7 @@ pub fn run_case(
             TestMode::Console
         }),
         // The real thing does this, so the corpus does too: it is how a case
-        // at a path QB64-PE cannot be given is made to build at all.
+        // at a path the compiler cannot be given is made to build at all.
         prepare: Some(build::Preparation {
             tool_root: paths.tool_root(),
             lock_dir: paths.lock_dir(),
@@ -302,9 +302,11 @@ fn check(tc: &Toolchain, e: &Expect, outcome: &build::BuildOutcome) -> Result<()
         .exe
         .clone()
         .ok_or("build succeeded but produced no executable")?;
-    // A QB64 program changes to its own folder as it starts (see `libqb.cpp`),
-    // so the files it writes by name land beside it, wherever it was started
-    // from. That is also what the user sees after double-clicking it.
+    // A FreeBASIC program writes where it was started from, not beside itself
+    // — QB64 changed folder at startup and this does not
+    // (`docs/verification.md`, F2) — so it is started in its own folder, which
+    // is where the files it writes by name have to land, and where Explorer
+    // starts it after a double-click.
     let run_dir = exe
         .parent()
         .ok_or("the program has no folder")?
@@ -349,7 +351,7 @@ fn check(tc: &Toolchain, e: &Expect, outcome: &build::BuildOutcome) -> Result<()
 }
 
 /// Window cases run the program itself on a virtual X screen, so they need
-/// `xvfb-run`, and a QB64-PE whose programs run here without a launcher.
+/// `xvfb-run`, and an `fbc` whose programs run here without a launcher.
 pub fn can_run_windows(tc: &Toolchain) -> bool {
     tc.launcher().is_none() && which::which("xvfb-run").is_ok()
 }

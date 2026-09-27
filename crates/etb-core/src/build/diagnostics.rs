@@ -43,18 +43,21 @@ impl Severity {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Diagnostic {
     pub severity: Severity,
-    /// The file: a staged name as QB64 reported it, until `remap` runs; then
+    /// The file: a staged name as the compiler reported it, until `remap` runs;
+    /// then
     /// the user's file.
     pub file: Option<String>,
     pub line: Option<u32>,
-    /// QB64 does not report columns. Kept so every consumer has one shape.
+    /// Never set. `fbc` points at the column with a caret on a line of its own
+    /// rather than with a number, and that line is not parsed. Kept so every
+    /// consumer has one shape.
     pub col: Option<u32>,
-    /// QB64's message, in English.
+    /// The compiler's message, in English.
     pub message: String,
     /// The line in question: the user's own text after `remap`.
     pub snippet: Vec<String>,
     /// The problem is in something we generated — a line we added, or our
-    /// runtime support — or in the C++ stage behind QB64. Not the user's to fix,
+    /// runtime support — or in the C stage behind `fbc`. Not the user's to fix,
     /// and the interface says so.
     pub ours: bool,
 }
@@ -155,9 +158,11 @@ fn located(line: &str) -> Option<Diagnostic> {
 
 /// Put each diagnostic on the user's file and line, with the user's own text.
 ///
-/// `main_staged` is the staged name of the main program, which QB64 does not
-/// print (it names only included files). `user_line` gives the text of a line
-/// of one of the user's files, as the translator read it.
+/// `main_staged` is the staged name of the main program. `fbc` names whatever
+/// file it was given, so a diagnostic about the program itself arrives carrying
+/// the absolute path of that staged copy, which the line map knows by name.
+/// `user_line` gives the text of a line of one of the user's files, as the
+/// translator read it.
 pub fn remap(
     diags: &mut [Diagnostic],
     map: &LineMap,

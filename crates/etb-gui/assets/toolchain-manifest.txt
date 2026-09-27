@@ -1,12 +1,12 @@
 # Placeholder. `cargo xtask fetch-toolchain` overwrites this with a SHA-256 of
-# every file in the bundled QB64-PE, and the application embeds the result.
+# every file in the bundled FreeBASIC, and the application embeds the result.
 #
 # It lives in the application binary rather than inside the bundle on purpose: a
 # manifest sitting next to the compiler could be rewritten by whatever rewrote
 # the compiler, so it would attest to nothing.
 #
 # An empty manifest means "nothing to verify", which is correct for a development
-# checkout and for a build pointed at a QB64-PE it did not ship.
+# checkout and for a build pointed at a FreeBASIC it did not ship.
 #
 # DO NOT COMMIT A GENERATED ONE. It describes one specific fetched bundle, so a
 # checkout carrying it would report every file of any *other* bundle as missing

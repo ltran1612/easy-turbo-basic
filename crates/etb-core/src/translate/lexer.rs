@@ -3,14 +3,15 @@
 //! The lexer only has to be exact about *where* things are. Every rewrite is an
 //! edit to the original bytes at a token's span, never a re-printing of tokens,
 //! so anything the lexer does not understand simply passes through untouched —
-//! which is the right failure: QB64 will then say what it thinks of it.
+//! which is the right failure: the compiler will then say what it thinks of it.
 //!
 //! Bytes outside ASCII only matter inside strings and comments, where they are
 //! the user's own text in whatever DOS code page they typed it in. They are
 //! never decoded here.
 
 /// Statements that take a file number, and that Turbo Basic accepted with the
-/// `#` written straight after the keyword: `PRINT#1,`. QB64 reads `PRINT#` as
+/// `#` written straight after the keyword: `PRINT#1,`. FreeBASIC reads `PRINT#`
+/// as
 /// one name — a variable called `PRINT` with the double-precision suffix — and
 /// stops with "Syntax error" (see `fbc.bas`, where file `PRINT` is recognised
 /// only as element 1 = `PRINT`, element 2 = `#`).
@@ -64,7 +65,7 @@ impl Token {
 }
 
 /// One lexed line, plus the places where Turbo Basic's spelling needs a space
-/// that QB64's does not.
+/// that FreeBASIC's does not.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lexed {
     pub tokens: Vec<Token>,

@@ -7,10 +7,10 @@ Two probe programs, and what the real Turbo Basic 1.1 compiler answered.
 | `SOSANH.BAS` | numbers, `PRINT USING`, integer division, rounding, the TB-only functions |
 | `KIEUSO.BAS` | what type an unsuffixed constant is, and when TB switches to exponential |
 | `tb-golden.txt` | what **Turbo Basic** printed, run in DOSBox |
-| `qb64-golden.txt` | what **this application** prints, built with QB64-PE |
+| `fbc-golden.txt` | what **this application** prints, built with FreeBASIC |
 
 `cargo test -p etb-testkit --test numbers` builds `SOSANH.BAS`, runs it, and
-holds it to `qb64-golden.txt` — and to the list of differences from Turbo
+holds it to `fbc-golden.txt` — and to the list of differences from Turbo
 Basic, which is written out in that test with a reason for each. A new
 difference fails; so does an old one silently disappearing.
 

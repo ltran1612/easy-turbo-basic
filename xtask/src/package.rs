@@ -180,17 +180,19 @@ fn licences(root: &Path, out: &Path, target: &str, version: &str) -> Result<()> 
         "Easy Turbo Basic itself is licensed MIT OR Apache-2.0 (`LICENSE-MIT`,\n\
          `LICENSE-APACHE`).\n\n\
          ## The bundled compiler\n\n\
-         The `toolchain/` directory is QB64 Phoenix Edition and the C++ toolchain it\n\
-         runs. Each component is listed below with its licence; their own licence\n\
-         texts are in `toolchain/licenses/` and `toolchain/internal/c/c_compiler/`,\n\
-         and the GNU General Public License is `gpl-3.0.txt` here.\n\n\
-         Easy Turbo Basic runs QB64-PE as a separate program, which runs the others\n\
-         in turn, communicating through command-line arguments and files. That is an\n\
+         The `toolchain/` directory is FreeBASIC and, on Windows, the GNU toolchain it\n\
+         drives: on x86-64 FreeBASIC translates BASIC to C and has GCC compile it.\n\
+         Each component is listed below with its licence. FreeBASIC ships its own\n\
+         licence texts and they are kept, in `toolchain/doc/`: `gpl.txt` (GPL version\n\
+         2), `lgpl.txt` (LGPL version 2.1) and `libffi-license.txt`. GCC and GNU\n\
+         binutils are under version 3, which is `gpl-3.0.txt` here.\n\n\
+         Easy Turbo Basic runs `fbc` as a separate program, which runs the others in\n\
+         turn, communicating through command-line arguments and files. That is an\n\
          aggregate, not a combined work.\n\n\
-         **Programs you build are yours.** QB64-PE's runtime and the libraries it\n\
-         builds into your program are under permissive licences, listed in\n\
-         `toolchain/licenses/`. They place no requirement on your own code; if you\n\
-         give a built program to other people, include those notices with it.\n\n\
+         **Programs you build are yours.** FreeBASIC's runtime is licensed so that a\n\
+         program you compile carries no obligation of its own — see the note beside\n\
+         FreeBASIC in the table below, and `toolchain/doc/lgpl.txt`. If you give a\n\
+         built program to other people, include those notices with it.\n\n\
          ## Components\n\n",
     );
     md.push_str("| Component | Version | Licence |\n|---|---|---|\n");

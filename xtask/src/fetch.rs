@@ -1,17 +1,19 @@
 //! `cargo xtask fetch-toolchain` — turn a pinned recipe into a usable bundle.
 //!
 //! Download, verify, extract, (on Linux) build, prune, describe. Everything
-//! the application needs to ship its own QB64 Phoenix Edition, reproducibly,
+//! the application needs to ship its own FreeBASIC, reproducibly,
 //! from a recipe under version control.
 //!
 //! Pure Rust rather than a shell script because this has to run on Windows CI,
 //! where `7z` and `tar` are not a given.
 //!
-//! **Modification times are part of the bundle.** QB64-PE runs `make` over its
-//! own runtime, and make decides what to rebuild by comparing times. Extracting
-//! or copying without them turns a prebuilt runtime into one make either
-//! rebuilds on the user's machine or, worse, trusts when it should not. So
-//! every step here carries the archive's times through to the bundle.
+//! **Modification times are carried through** from the archive to the bundle,
+//! and from the bundle to the copy `Toolchain::prepare` makes. With QB64-PE
+//! this was load-bearing: it ran `make` over its own runtime and decided what to
+//! rebuild by comparing times, so a tree stamped "now" was rebuilt on the user's
+//! machine or, worse, trusted when it should not have been. FreeBASIC builds
+//! nothing of its own, so nothing depends on it now; it is kept because a copy
+//! of a tree should be that tree.
 
 use anyhow::{bail, Context, Result};
 use etb_core::glob;
@@ -35,8 +37,10 @@ pub struct Recipe {
     #[serde(default)]
     build: Option<Build>,
     prune: Prune,
-    /// What QB64-PE writes inside its own directory as it works. These paths
-    /// are recorded in the manifest and not attested: see `manifest.rs`.
+    /// What the compiler writes inside its own directory as it works. Such paths
+    /// are recorded in the manifest and not attested: see `manifest.rs`. Both
+    /// recipes list none — `fbc` writes only where it is told — and the list is
+    /// kept, and kept empty, so the answer is explicit rather than absent.
     #[serde(default)]
     mutable: Mutable,
     /// Where the source of everything in the bundle can be had, and under what
@@ -182,8 +186,8 @@ pub fn sources(args: &[String]) -> Result<()> {
     let mut md = String::new();
     md.push_str("# Corresponding Source\n\n");
     md.push_str(
-        "The compiler shipped with this application is QB64 Phoenix Edition together\n\
-         with the C++ toolchain it drives. Some of those components are licensed under\n\
+        "The compiler shipped with this application is FreeBASIC together with the\n\
+         GNU toolchain it drives. Some of those components are licensed under\n\
          the GNU General Public License, which requires that their source be available\n\
          from the same place as the binaries, for as long as the binaries are\n\
          distributed.\n\n\
@@ -348,7 +352,7 @@ pub fn run(args: &[String]) -> Result<()> {
     // tried to build with it.
     check_driver_present(&bundle, &template)?;
 
-    // And that it is the version the recipe pins, not merely *a* QB64.
+    // And that it is the version the recipe pins, not merely *a* FreeBASIC.
     check_version_is_pinned(&recipe, &template, &tree, &bundle)?;
 
     let manifest = write_manifest(&bundle, &root, &recipe.mutable.paths)?;
@@ -400,8 +404,8 @@ fn build_from_source(tree: &Path, b: &Build) -> Result<()> {
             .with_context(|| format!("running `{prog}` (is it installed?)"))?;
         if !status.success() {
             bail!(
-                "`{}` failed ({status}). QB64-PE's Linux build needs a C++ compiler, make, \
-                 and the OpenGL, GLU, ALSA, libpng and libcurl development packages.",
+                "`{}` failed ({status}). A recipe that builds its compiler from source \
+                 needs whatever that compiler needs installed; neither recipe does so now.",
                 argv.join(" ")
             );
         }
@@ -718,10 +722,9 @@ fn check_driver_present(bundle: &Path, template: &Path) -> Result<()> {
 
 /// The version is written in several places. They must agree.
 ///
-/// `fbc_version` in the recipe, the archive's file name and URL, `version`
-/// in the bundle descriptor (which the application reports without asking),
-/// and QB64-PE's own source, which says what it is in `source/global/version.bas`.
-/// A bump that updates some of them is the realistic mistake, and the quiet
+/// `fbc_version` in the recipe, the archive's file name and URL, and `version`
+/// in the bundle descriptor, which the application reports without asking. A
+/// bump that updates some of them is the realistic mistake, and the quiet
 /// outcome is the application naming a version the compiler is not.
 ///
 /// Last, where this host can run it, the compiler's own answer.

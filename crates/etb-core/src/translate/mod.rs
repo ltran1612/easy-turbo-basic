@@ -1,13 +1,14 @@
-//! Turbo Basic → QB64 Phoenix Edition.
+//! Turbo Basic → FreeBASIC.
 //!
-//! No compiler of this century accepts Turbo Basic as written: QB64 reads
+//! No compiler of this century accepts Turbo Basic as written: FreeBASIC reads
 //! `PRINT#1,` as a variable name, has never had `DEF FN`, and cannot open a
 //! printer port. So the program is translated, into the work tree, before
-//! QB64 sees it. The user's file is only read — this module does not even have
+//! the compiler sees it. The user's file is only read — this module does not
+//! even have
 //! a way to write; it returns bytes, and staging decides where they go.
 //!
 //! **Line numbers are kept.** Every rewrite edits within a line, so line 155 of
-//! the staged program is line 155 of the user's. QB64's compile errors, and the
+//! the staged program is line 155 of the user's. The compiler's errors, and the
 //! run-time errors the saved program reports long after we are gone, then point
 //! at the line the user can find. The few lines that have to be added go after
 //! the user's last line, and [`LineMap`] records them.
@@ -484,11 +485,25 @@ fn prelude_text(
         stem
     };
 
+    // What `ETB_FINISH` does last.
+    //
+    // QB64-PE paused by itself at `END` and printed "Press any key to
+    // continue"; FreeBASIC ends the program there and then, so the wait is
+    // ours to emit. Nothing is printed with it: a program that drew a graph has
+    // its picture on the screen, and two lines of prompt at the bottom would
+    // scroll it away. Turbo Basic left the screen as the program had painted it
+    // and returned to the DOS prompt, and this leaves it painted and waits.
+    //
+    // `SLEEP` with no argument waits for a key where there is a terminal and
+    // returns at once where there is not (measured), so a build under test or
+    // in CI cannot hang on it. The `INKEY$` drain throws away whatever was
+    // typed during the run, which would otherwise answer the wait before the
+    // user had read anything.
     let exit = match opts.test_mode {
         Some(TestMode::Window) => format!("BSAVE \"{TEST_SCREENSHOT}\", 0: SYSTEM"),
         Some(TestMode::Console) => "SYSTEM".into(),
         None if !opts.keep_window_open => "SYSTEM".into(),
-        None => "' END follows, and waits for a key.".into(),
+        None => "WHILE INKEY$ <> \"\": WEND\n    SLEEP".into(),
     };
     let test_support = if opts.test_mode == Some(TestMode::Window) {
         TEST_KEYS
@@ -567,7 +582,7 @@ input \"Again (c/k) \";a$\r\nif a$ =\"c\" then 2\r\nend\r\n\r\n\x1a";
             .unwrap()
             .split("\r\n")
             .collect();
-        // Line 10 is the glued print# — the kind of line QB64 stops on.
+        // Line 10 is the glued print# — the kind of line the compiler stops on.
         assert_eq!(input[9], "print# 4,space$(15);\"KET QUA\"");
         assert_eq!(out[9], "print # 4,space$(15);\"KET QUA\"");
         assert_eq!(
@@ -661,6 +676,37 @@ input \"Again (c/k) \";a$\r\nif a$ =\"c\" then 2\r\nend\r\n\r\n\x1a";
             t.map.main_origin(10),
             Some(Origin::User { file: 0, line: 10 })
         );
+    }
+
+    /// The option the GUI shows on by default, and the help page describes,
+    /// has to be in the program that is built. QB64-PE waited for a key by
+    /// itself, so for a while nothing emitted the wait and the option did
+    /// nothing at all: a double-clicked program printed its results into a
+    /// window that closed the same instant.
+    #[test]
+    fn keeping_the_window_open_puts_a_wait_in_the_program() {
+        let waiting = prelude_text(&TranslateOptions::default(), &[], &Default::default());
+        assert!(
+            waiting.contains("SLEEP"),
+            "nothing waits for a key:\n{waiting}"
+        );
+        assert!(
+            waiting.contains("WHILE INKEY$ <> \"\": WEND"),
+            "keys typed during the run would answer the wait:\n{waiting}"
+        );
+
+        // And turning it off means the program ends, not that it waits with
+        // the prompt suppressed.
+        let closing = prelude_text(
+            &TranslateOptions {
+                keep_window_open: false,
+                ..Default::default()
+            },
+            &[],
+            &Default::default(),
+        );
+        assert!(!closing.contains("SLEEP"), "it still waits:\n{closing}");
+        assert!(closing.contains("SYSTEM"));
     }
 
     #[test]

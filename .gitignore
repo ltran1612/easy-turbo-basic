@@ -4,9 +4,12 @@
 # by `cargo xtask fetch-toolchain`, and published as a release artefact by CI.
 # These are here as a second line of defence: `cargo xtask check-hygiene` fails
 # the build if anything toolchain-shaped is tracked, wherever it lives.
-**/toolchain/internal/
-**/toolchain/licenses/
-**/toolchain/qb64pe
+**/toolchain/bin/
+**/toolchain/inc/
+**/toolchain/lib/
+**/toolchain/doc/
+**/toolchain/fbc
+**/toolchain/fbc.exe
 *.7z
 *.exe
 *.dll

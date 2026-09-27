@@ -6,16 +6,18 @@
 //! the compiler, so it would attest to nothing.
 //!
 //! Two failures matter and they need different advice. A **missing** file is
-//! almost always antivirus — QB64-PE's own `fbc.exe`, and the compiler
+//! almost always antivirus — FreeBASIC's own `fbc.exe`, and the compiler
 //! binaries beside it, are known false positives. A **changed** file is not,
 //! and should be treated as tampering.
 //!
-//! One exception, and it is written down rather than assumed: QB64-PE compiles
-//! its own runtime on first use and keeps its settings and its intermediate
-//! C++ inside its own directory. Those paths are listed in the manifest as
-//! `# mutable: <glob>` by the fetch that wrote it, and are not checked. The
-//! list comes with the manifest — embedded in the application, like the
-//! hashes — so a file beside the compiler cannot add to it.
+//! There is machinery for an exception, and with FreeBASIC nothing uses it.
+//! A compiler that writes inside its own directory — as QB64-PE did, compiling
+//! its own runtime on first use and keeping its settings beside itself — has
+//! those paths listed in the manifest as `# mutable: <glob>` by the fetch that
+//! wrote it, and they are not checked. `fbc` writes only where it is told, so
+//! the recipes list none and every file is attested. The list comes with the
+//! manifest — embedded in the application, like the hashes — so a file beside
+//! the compiler cannot add to it.
 
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;

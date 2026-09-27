@@ -119,7 +119,7 @@
 "update.download_hint" = "Hãy tải tệp cài đặt về và chạy nó. Tệp này sẽ thay thế phiên bản hiện tại và giữ nguyên các chương trình của bạn."
 "update.failed" = "Không kiểm tra được: {reason}"
 "options.keep_window_open" = "Chờ nhấn phím trước khi đóng cửa sổ"
-"options.keep_window_open_hint" = "Khi chương trình kết thúc, cửa sổ vẫn mở với dòng “Press any key to continue” để bạn kịp đọc kết quả."
+"options.keep_window_open_hint" = "Khi chương trình kết thúc, cửa sổ vẫn mở cho đến khi bạn nhấn một phím, để bạn kịp đọc kết quả. Không có chữ nào in thêm lên màn hình mà chương trình để lại."
 
 # Translator findings
 "tr.warn.text_after_ctrl_z" = "“{file}” còn chữ nằm sau dấu kết thúc tệp (Ctrl-Z). Turbo Basic trước đây cũng không đọc phần đó, nên nó không thuộc chương trình. Nếu cần phần đó, hãy mở tệp bằng Notepad và chuyển nó lên trên dấu kết thúc."

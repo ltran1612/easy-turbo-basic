@@ -2,8 +2,9 @@
 //!
 //! Two directories hold nothing the user would miss: the work trees a build
 //! writes into, and the copy of the compiler made for a machine whose own path
-//! QB64-PE cannot be given (`toolchain::Toolchain::prepare`). Both are rebuilt
-//! on demand, and together they are most of a gigabyte.
+//! the compiler cannot be given (`toolchain::Toolchain::prepare`). Both are
+//! rebuilt
+//! on demand, and together they are hundreds of megabytes.
 //!
 //! They are cleared from two places: a button in Settings, when a build has
 //! gone strange enough that starting the compiler afresh is worth a try, and

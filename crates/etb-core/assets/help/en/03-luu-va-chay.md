@@ -8,13 +8,14 @@ it. It does not need this application to run.
 
 ## The window
 
-The program opens in its own window, 80 characters by 25 lines, with the
-colours your program chooses — as it looked in DOS. Graphics (`SCREEN`,
-`LINE`, `CIRCLE`) appear in the same window.
+The program opens in its own text window, with the colours your program
+chooses — as it looked in DOS. A program that draws (`SCREEN`, `LINE`,
+`CIRCLE`) opens a second window for the drawing.
 
-When the program ends, the window stays open with **Press any key to
-continue**, so the results can be read. The option *Wait for a key before the
-window closes* turns that off.
+When the program ends, the window stays open until you press a key, so the
+results can be read. Nothing is printed over what the program left on the
+screen, so a graph stays as it was drawn. The option *Wait for a key before the
+window closes* turns the waiting off.
 
 ## Where the program's files go
 

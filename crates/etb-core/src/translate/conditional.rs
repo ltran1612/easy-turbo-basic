@@ -9,7 +9,7 @@
 //! program: a line in a branch that is not compiled defines nothing — no
 //! function, no constant — so it must be out of the way before the analysis
 //! runs. The translator resolves the conditions itself rather than handing
-//! them on, which keeps QB64's own `$IF`, a different language, out of it.
+//! them on, which keeps FreeBASIC's own `$IF`, a different language, out of it.
 
 use super::lexer::{self, Kind, Token};
 use super::stmt;

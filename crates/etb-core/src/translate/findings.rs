@@ -7,7 +7,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub enum Severity {
     /// The program cannot be built as written. Every one of these is reported
-    /// together, before QB64 runs — QB64 stops at its first error, so this is
+    /// together, before the compiler runs: what it reports is about the
     /// the only place a user can learn about all of them at once.
     Refuse,
     /// It builds, but will not behave as it did under Turbo Basic.

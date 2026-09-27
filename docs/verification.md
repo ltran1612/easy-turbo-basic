@@ -160,7 +160,9 @@ And once more through what is actually shipped —
 `packaging/windows/verify-vietnamese-under-wine.sh` puts the packaged product
 at `C:\users\Nguyễn Văn A\AppData\Local\Programs\Easy Turbo Basic`, points
 its data directory at the same account, and drives the real `etb-cli.exe`
-under wine:
+under wine. This run is the QB64-era one, kept because it is the evidence the
+design rests on; the same arrangement measured against FreeBASIC is F12, and the
+sizes there are a tenth of these:
 
 ```
 config dir : C:\users\Nguyễn Văn A\AppData\Roaming\Easy Turbo Basic\config
@@ -183,24 +185,53 @@ machine whose paths are ASCII there is no copy at all.
 program it is silently ignored and the output goes to a window. Console test
 mode therefore costs exactly one injected line, which the line map records.
 
-**F5. `END`, and falling off the end, wait for a key; `SYSTEM` does not**
-(`libqb.cpp`: "Press any key to continue"). For the user that is the point —
-the window stays up. For a test it is a hang, so test mode finishes with
-`SYSTEM`.
+**F5. Nothing waits at `END`. The wait is ours to emit.** QB64-PE paused at
+`END` and on falling off the end, printing "Press any key to continue"
+(`libqb.cpp`), and `SYSTEM` was the way to avoid it. FreeBASIC does neither:
 
-**F6. `qb64pe.exe` under wine accepts Unix paths** (`/home/...`), so the
-application passes the same absolute paths on every host.
+```
+$ printf 'PRINT "done"\nEND\n' > ENDW.BAS && fbc -lang qb ENDW.BAS -x endw
+$ ./endw            # prints, exits, returns 0 immediately
+```
 
-**F7. An error inside an included file** is reported with the included file
-and its line after a `\x01` in the message (`Name already in use\x01 in line
-3 of etb_inc_1.bas included`), and `LINE` naming the `$INCLUDE` line. Assumed
-from QB64-PE's source first, then seen: the corpus case `include_error` gets
-its message on the included file's line 2.
+For a while after the compiler changed, nothing emitted a wait, so the option
+*Wait for a key before the window closes* — on by default, described in the
+help — did nothing at all: a double-clicked program printed its results into a
+window that closed the same instant.
+
+*Settled.* `translate::prelude_text` puts `WHILE INKEY$ <> "": WEND` and a bare
+`SLEEP` in `ETB_FINISH`, and a unit test fails if either goes missing. Measured
+for the two cases that matter: bare `SLEEP` waits for a key on a terminal (on a
+pty, still running after 1.5 s; it exits when a key arrives) and returns at once
+where there is no terminal, so a Linux test or CI run cannot hang on it.
+
+Windows is not the same: the same program built for Windows and run under wine
+waits at `SLEEP` even with stdin at `/dev/null`. For the user that is the point.
+For automation it means anything that *runs* a built program must build it with
+`--no-keep-open`, or expect to be waiting — which is what
+`packaging/windows/verify-vietnamese-under-wine.sh` now checks for, treating a
+timeout as the pass. Nothing is
+printed with it — a program that drew a graph would have the picture scrolled
+away by a two-line prompt — which is also what Turbo Basic did: the screen
+stayed as the program had painted it.
+
+**F6. `qb64pe.exe` under wine accepted Unix paths** (`/home/...`), so the
+application could pass the same absolute paths on every host. Not relied on any
+more: the wine scripts hand the Windows `etb-cli.exe` Windows paths
+(`C:\etb-work\...`), which is what a Windows machine gives it anyway.
+
+**F7. An error inside an included file** reaches the user on that file and that
+line. QB64-PE reported it after a `\x01` in the message (`Name already in
+use\x01 in line 3 of etb_inc_1.bas included`) with `LINE` naming the `$INCLUDE`
+line; FreeBASIC names the included file directly, in the `FILE(LINE) error N:`
+form `build/diagnostics.rs` parses. The conclusion is the one that is tested
+either way: the corpus case `include_error` gets its message on the included
+file's line 2.
 
 **F8. Two builds at once through one QB64-PE produced the wrong program**
 (kept because it is why the lock exists at all, and the lock still guards the
 copy of a compiler being made).
-QB64-PE writes its intermediate C++ into its own directory, in the same place
+QB64-PE wrote its intermediate C++ into its own directory, in the same place
 for every program. Two builds overlapping in time — seen when two tests ran in
 parallel — gave one of them the *other's* program: a test expecting
 `phan chinh` got `HESO = 2.50`. FreeBASIC writes only where it is told (F9), so
@@ -216,10 +247,17 @@ so the list is empty — and `cargo test -p etb-testkit --test mutable` fails if
 that stops being true.
 
 **F10. What the Windows bundle can lose.** The FreeBASIC release is 181 MB
-extracted, of which `examples/` and `doc/` are 4.7 MB a build never opens.
-Pruned: 176 MB, which compresses to a 26 MB installer. (The same measurement against QB64-PE dropped 399 MB of
-sysroots for other architectures, a bundled Python, lldb and clangd — the
-reason for the change of compiler is in that number.)
+extracted, of which `examples/` is 4.6 MB in 1689 files a build never opens.
+Pruned: 176 MB, which compresses to a 26 MB installer. `doc/` is *not* dropped,
+though a build never opens it either: 75 KB of it is the licence text FreeBASIC
+ships with its own binaries — `gpl.txt`, `lgpl.txt`, `libffi-license.txt` — and
+dropping it meant distributing GPL binaries having deleted the licence they came
+with. The notice `cargo xtask package` writes points a reader at those files by
+name, and the integrity manifest attests them like everything else.
+
+(The same measurement against QB64-PE dropped 399 MB of sysroots for other
+architectures, a bundled Python, lldb and clangd — the reason for the change of
+compiler is in that number.)
 
 **F11. `$word` at the start of a comment is a FreeBASIC directive.** `'$IF`,
 `REM $IF` and `' $IF` are all parsed, and an unknown one is an error; only

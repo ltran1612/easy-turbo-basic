@@ -347,10 +347,14 @@ impl FsGuard {
 impl FsGuard {
     /// Copy a whole tree into a write root, keeping each file's time.
     ///
-    /// The times matter: QB64-PE runs `make` over its own runtime, and make
-    /// decides what to rebuild by comparing them. A copy stamped "now" would
-    /// have the prebuilt runtime rebuilt on the user's machine, or — worse —
-    /// leave a stale object looking newer than its source.
+    /// The times are kept so the copy is the same tree, not a new one that
+    /// happens to hold the same bytes. It was once load-bearing: QB64-PE ran
+    /// `make` over its own runtime and decided what to rebuild by comparing
+    /// them, so a copy stamped "now" had the prebuilt runtime rebuilt on the
+    /// user's machine or — worse — left a stale object looking newer than its
+    /// source. FreeBASIC builds nothing of its own and the integrity manifest
+    /// attests contents rather than times, so nothing depends on this now. It
+    /// costs one `set_modified` per file, and it is what copying should do.
     ///
     /// Returns the number of files copied, or `None` if `cancel` was set part
     /// way: a copy of a compiler is hundreds of megabytes, and Stop has to
@@ -413,18 +417,26 @@ impl FsGuard {
     }
 }
 
-/// Held while a build uses one QB64-PE installation; released when dropped.
+/// Held while one installation of the compiler is being copied; released when
+/// dropped.
 #[derive(Debug)]
 pub struct ToolchainLock(#[allow(dead_code)] File);
 
-/// Take the lock on one QB64-PE installation, waiting for it if another build
-/// — on another thread, or in another process of the same user — has it.
+/// Take the lock on one installation of the compiler, waiting for it if another
+/// build — on another thread, or in another process of the same user — has it.
 ///
-/// QB64-PE writes its intermediate C++ into its own directory, in the same
-/// place whichever program it is building. Two builds at once through one
-/// installation do not merely fail: one was seen to produce the *other's*
-/// program, which is the worst thing a build can do. So builds through one
-/// installation take turns.
+/// What it guards is `Toolchain::prepare`: a whole compiler appearing at an
+/// ASCII path, file by file. Two of those at once would interleave in one
+/// directory and each would then find a tree the other was halfway through
+/// writing.
+///
+/// It once guarded the compile as well. QB64-PE wrote its intermediate C++
+/// into its own directory, in the same place whichever program it was
+/// building, and two builds at once through one installation did not merely
+/// fail: one was seen to produce the *other's* program, which is the worst
+/// thing a build can do (`docs/verification.md`, F8). `fbc` writes only where
+/// it is told, which `cargo test -p etb-testkit --test mutable` measures, so
+/// the compile itself no longer takes turns.
 ///
 /// The lock file lives in `lock_dir`, which belongs to this user
 /// (`AppPaths::lock_dir`), and is named for the installation, because every
@@ -557,7 +569,8 @@ impl Scratch {
 }
 
 /// Extensions a BASIC source file carries, in any case: Turbo Basic's own
-/// `.BAS`, the include files people gave other names, and QB64's.
+/// `.BAS`, the include files people gave other names, and the ones FreeBASIC
+/// uses for its own includes.
 ///
 /// One list: the export guard uses it to refuse writing over something that looks
 /// like the user's source, and the file dialog uses it to offer the right files. Two

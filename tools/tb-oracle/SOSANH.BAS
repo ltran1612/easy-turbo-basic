@@ -1,7 +1,7 @@
 ' Written for Easy Turbo Basic
 ' How Turbo Basic prints numbers, and what its arithmetic answers.
 '
-' Every one of these is a silent wrong answer if QB64 differs: the program
+' Every one of these is a silent wrong answer if FreeBASIC differs: the program
 ' still runs, the number is just not the one the user has been reading for
 ' thirty years. Run through the real TB 1.1 to make the goldens, then through
 ' this application, and compare. See docs/verification.md, V13.

@@ -133,7 +133,7 @@ fn test_mode(arg: Option<&String>) -> Result<TestMode> {
     }
 }
 
-/// Print what QB64 would be given for a Turbo Basic program: the translated
+/// Print what the compiler would be given for a Turbo Basic program: the translated
 /// main file by default, any other staged file with `--file`, and with `--map`
 /// the line map, so a support call can see exactly where a line went.
 fn translate(args: &[String]) -> Result<()> {
@@ -235,7 +235,7 @@ fn find_toolchain() -> Result<Toolchain> {
     toolchain::discover(store_override.as_deref()).map_err(|e| match e {
         // Nothing shipped and nothing installed: the hint is the useful part.
         etb_core::error::EtbError::ToolchainMissing => anyhow::Error::new(e).context(
-            "no QB64-PE found (run `cargo xtask fetch-toolchain`, or set ETB_TOOLCHAIN_BUNDLE)",
+            "no FreeBASIC found (run `cargo xtask fetch-toolchain`, or set ETB_TOOLCHAIN_BUNDLE)",
         ),
         // A bundle is present and will not load. Saying "install one" would send
         // someone to fix the wrong thing -- and installing one is precisely what
@@ -425,9 +425,9 @@ fn doctor() -> Result<()> {
         print!("{}", report.detail());
     }
 
-    // Whether it actually runs: QB64's own pass over a one-line program, no
-    // C++. A compiler that is present, attested and cannot start is the case
-    // this line exists for.
+    // Whether it actually runs: fbc's own pass over a one-line program,
+    // stopping before the assembler. A compiler that is present, attested and
+    // cannot start is the case this line exists for.
     //
     // Through the copy, where there is one, because that is the compiler a
     // build would use and so the one worth smoke-testing.

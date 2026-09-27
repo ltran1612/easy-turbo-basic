@@ -25,7 +25,10 @@ strip_prefix = "FreeBASIC-1.10.1-linux-x86_64"
 
 [prune]
 keep = ["*"]
-drop = ["examples/*", "doc/*"]
+drop = ["examples/*"]
+# `doc/` stays: 75 KB, and it holds the licence texts FreeBASIC ships with its
+# own binaries (gpl.txt, lgpl.txt, libffi-license.txt), which the packaged
+# notice points at by name.
 
 [mutable]
 paths = []

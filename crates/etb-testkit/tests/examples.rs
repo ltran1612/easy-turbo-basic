@@ -2,7 +2,7 @@
 //! `examples/DOC-TRUOC.txt`, says they do.
 //!
 //! They are the first thing someone new presses the button on, so a broken
-//! one is the first impression. Each is built with the real QB64-PE and, where
+//! one is the first impression. Each is built with the real compiler and, where
 //! it runs without a screen, run with the answers the guide tells the user to
 //! type.
 

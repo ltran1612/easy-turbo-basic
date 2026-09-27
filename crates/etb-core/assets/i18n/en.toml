@@ -119,7 +119,7 @@
 "update.download_hint" = "Download the installer and run it. It replaces this version and keeps your programs."
 "update.failed" = "Could not check: {reason}"
 "options.keep_window_open" = "Wait for a key before the window closes"
-"options.keep_window_open_hint" = "When the program ends, its window stays open with “Press any key to continue”, so you can read the results."
+"options.keep_window_open_hint" = "When the program ends, its window stays open until you press a key, so you can read the results. Nothing is printed over the screen the program left."
 
 # Translator findings
 "tr.warn.text_after_ctrl_z" = "“{file}” has more text after the end-of-file mark (Ctrl-Z). Turbo Basic never read it either, so it is not part of the program. If it should be, open the file in Notepad and move it above the mark."

@@ -1,6 +1,7 @@
 //! Where each line of a staged file came from.
 //!
-//! QB64 names a line of *our* file; the user needs a line of *theirs*. Almost
+//! The compiler names a line of *our* file; the user needs a line of *theirs*.
+//! Almost
 //! every staged line is the user's line of the same number, because rewrites
 //! edit within a line. The map exists for the few that are not: lines added to
 //! make the program work, and the whole of the runtime support file.
@@ -20,7 +21,7 @@ pub enum Origin {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct StagedMap {
-    /// The staged file's name, as QB64 will report it.
+    /// The staged file's name, as the compiler will report it.
     pub staged: String,
     /// Origin of each staged line; index 0 is line 1.
     pub lines: Vec<Origin>,
@@ -36,7 +37,8 @@ pub struct LineMap {
 impl LineMap {
     /// Where line `line` (1-based) of the staged file `staged` came from.
     ///
-    /// `staged` may be a bare name or a path: QB64 prints included files by the
+    /// `staged` may be a bare name or a path: the compiler prints included files
+    /// by the
     /// name they were included under, and on Windows compares names without
     /// regard to case.
     pub fn origin(&self, staged: &str, line: u32) -> Option<Origin> {

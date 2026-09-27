@@ -1,10 +1,12 @@
 //! Reading the user's files and putting a translated copy in the work tree.
 //!
 //! This is what makes the promise keepable: every file of the user's is read
-//! once, through `FsGuard`, and from then on QB64 only ever sees our copy.
-//! The copy is also the translation — Turbo Basic in, QB64 out — so the
+//! once, through `FsGuard`, and from then on the compiler only ever sees our
+//! copy.
+//! The copy is also the translation — Turbo Basic in, FreeBASIC out — so the
 //! staged names are ours too: plain ASCII, whatever the user's files are
-//! called, which keeps a Vietnamese file name out of QB64's command line.
+//! called, which keeps a Vietnamese file name out of the compiler's command
+//! line.
 
 use crate::build::sourcefmt;
 use crate::error::{EtbError, Result};

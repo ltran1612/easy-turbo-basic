@@ -1,9 +1,9 @@
 //! Exercises the *bundled* toolchain path.
 //!
 //! A bundle is a directory with a `bundle.toml` and a `fbc` in it. These
-//! tests lay one out around the fake QB64-PE, so discovery, the descriptor and
+//! tests lay one out around the fake `fbc`, so discovery, the descriptor and
 //! the environment plumbing are proved on any machine, with or without a real
-//! QB64.
+//! FreeBASIC.
 
 use etb_core::build;
 use etb_core::fs_guard::FsGuard;
@@ -15,7 +15,7 @@ use std::sync::atomic::AtomicBool;
 
 const FAKE_FBC: &str = env!("CARGO_BIN_EXE_fake_fbc");
 
-/// Lay out a bundle around the fake QB64-PE.
+/// Lay out a bundle around the fake `fbc`.
 fn make_bundle(root: &Path, extra_toml: &str) {
     std::fs::create_dir_all(root.join("internal/c/c_compiler/bin")).unwrap();
     let exe = format!("fbc{}", std::env::consts::EXE_SUFFIX);
@@ -102,12 +102,12 @@ fn a_bundle_missing_its_compiler_is_reported_as_a_damaged_installation() {
 
 // -------------------------------------------- a real bundle at a real path
 
-/// A real QB64-PE installed where a Vietnamese user name puts it still builds.
+/// A real FreeBASIC installed where a Vietnamese user name puts it still builds.
 ///
 /// Ignored by default: it needs the fetched Windows bundle and copies it, so
 /// it costs a gigabyte and a minute. `toolchain/verify-under-wine.sh` runs it,
 /// because wine is where the problem it is about was first seen — a Windows
-/// QB64-PE takes its arguments through the ANSI code page, which has no
+/// A Windows `fbc` takes its arguments through the ANSI code page, which has no
 /// Vietnamese, so `Nguyễn Văn A` reaches it as `Nguy?n Van A`
 /// (`docs/verification.md`, F3).
 ///
@@ -133,7 +133,7 @@ fn a_compiler_installed_under_a_vietnamese_name_still_builds() {
     );
 
     // Everything this test writes stays on the same disk as the repository:
-    // the copy is the size of a QB64-PE, which is no size for a temp file
+    // the copy is the size of a compiler, which is no size for a temp file
     // system.
     let scratch = repo.join("target").join("vietnamese-path-test");
     let _ = std::fs::remove_dir_all(&scratch);

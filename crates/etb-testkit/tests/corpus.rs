@@ -1,4 +1,4 @@
-//! Tier 2: a real QB64-PE against a corpus of Turbo Basic programs.
+//! Tier 2: a real FreeBASIC against a corpus of Turbo Basic programs.
 //!
 //! Skipped automatically when no compiler is available, so the rest of the
 //! suite still runs on a bare machine. Set `ETB_REQUIRE_TOOLCHAIN=1` (CI does)
@@ -92,11 +92,12 @@ fn every_corpus_case_behaves_as_documented() {
 /// On a Vietnamese Windows install the user's programs sit in folders the user
 /// named themselves, and the application's own directories are under
 /// `C:\Users\Nguyễn Văn A\...`. The user's paths are only ever read by us, and
-/// QB64 only ever sees our ASCII-named copy, so none of this should reach it —
+/// The compiler only ever sees our ASCII-named copy, so none of this should
+/// reach it —
 /// which is exactly what needs proving.
 ///
 /// The application's own directories are the other half, and the harder one:
-/// a Windows QB64-PE receives its arguments through the ANSI code page, which
+/// a Windows `fbc` receives its arguments through the ANSI code page, which
 /// has no Vietnamese, so the path to our staged copy must itself be ASCII.
 /// On Windows `choose_work_root` sees to that by moving the work tree under
 /// ProgramData. That fallback is Windows-only, so when the Windows bundle is

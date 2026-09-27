@@ -1,14 +1,14 @@
-//! Locating and describing QB64 Phoenix Edition.
+//! Locating and describing FreeBASIC.
 //!
-//! One code path serves both cases: on Windows a pruned QB64-PE, with the C++
-//! compiler it drives, ships beside the executable; on Linux (development and
-//! testing only) QB64-PE is built from its pinned source and drives the
-//! system's C++ compiler. The difference is discovery and verification, not
-//! behaviour.
+//! One code path serves both cases: on Windows a pruned FreeBASIC, with the
+//! GNU toolchain it drives, ships beside the executable; on Linux (development
+//! and testing only) the official build is unpacked and drives the system's
+//! assembler, linker and C compiler. The difference is discovery and
+//! verification, not behaviour.
 //!
-//! QB64-PE is itself a translator: it turns BASIC into C++ and then runs
-//! `make` and a C++ compiler over that. So the environment it runs in matters
-//! twice over, and it is built from nothing rather than inherited.
+//! `fbc` is itself a translator: on x86-64 it turns BASIC into C and runs GCC
+//! and a linker over that. So the environment it runs in matters twice over,
+//! and it is built from nothing rather than inherited.
 
 pub mod bundle;
 pub mod manifest;
@@ -78,8 +78,13 @@ impl Toolchain {
         &self.fbc
     }
 
-    /// The directory QB64-PE runs in: its own. It finds its `internal` folder,
-    /// and writes its temporary C++ there, relative to it.
+    /// The directory the compiler runs in: the one holding `fbc` itself.
+    ///
+    /// `fbc` finds its `inc` and `lib` beside its own binary rather than
+    /// through the current directory, so this is not what makes it work — it is
+    /// where QB64-PE had to be run from, and it is harmless here. That it
+    /// writes nothing into this directory is measured by
+    /// `cargo test -p etb-testkit --test mutable`.
     pub fn home(&self) -> &Path {
         self.fbc.parent().unwrap_or(Path::new("."))
     }
@@ -114,7 +119,7 @@ impl Toolchain {
         }
     }
 
-    /// A command for QB64-PE, with a scrubbed environment, running in its own
+    /// A command for the compiler, with a scrubbed environment, running in its own
     /// directory.
     pub fn command(&self, layout: &WorkLayout) -> Command {
         let mut cmd = self.run_binary(&self.fbc);
@@ -134,7 +139,7 @@ impl Toolchain {
             .map_or_else(|| self.home(), |b| &b.root)
     }
 
-    /// Can QB64-PE be run where it is?
+    /// Can the compiler be run where it is?
     ///
     /// On Windows it receives its arguments — including the path to its own
     /// `internal` folder and to the program it is building — through the ANSI
@@ -280,7 +285,7 @@ impl Toolchain {
         }
     }
 
-    /// Environment for QB64-PE and everything it runs.
+    /// Environment for the compiler and everything it runs.
     pub fn compile_env(&self, layout: &WorkLayout) -> Vec<(OsString, OsString)> {
         scrubbed_env(self.bundle.as_ref(), &layout.tmp())
     }
@@ -313,7 +318,7 @@ impl Toolchain {
     pub fn from_bundle(root: &Path) -> Result<Self> {
         let b = match Bundle::load(root)? {
             Some(b) => b,
-            // No descriptor is fine: a plain QB64-PE tree needs none.
+            // No descriptor is fine: a plain FreeBASIC tree needs none.
             None => Bundle::resolve(root, bundle::BundleDescriptor::default())?,
         };
         if !b.fbc.is_file() {
@@ -341,7 +346,7 @@ impl Toolchain {
     }
 }
 
-/// Variables that must never reach QB64-PE or what it runs, because they
+/// Variables that must never reach the compiler or what it runs, because they
 /// inject search paths or settings into a build. They are absent by
 /// construction after `env_clear`, and a bundle descriptor is not allowed to
 /// put them back.
@@ -373,7 +378,6 @@ pub const BANNED_ENV: &[&str] = &[
     "MAKEFILES",
     "MAKELEVEL",
     "OS",
-    "BUILD_QB64",
 ];
 
 /// Build the scrubbed environment.
@@ -399,9 +403,12 @@ fn scrubbed_env(bundle: Option<&Bundle>, tmp: &Path) -> Vec<(OsString, OsString)
         path.push(&s32);
         env.push(("SystemRoot".into(), sysroot.clone()));
         env.push(("windir".into(), sysroot));
-        // QB64-PE runs `make` through the command interpreter, and finds it
-        // by this name. Passed through from our own environment, as the
-        // system root is; Windows always sets it.
+        // QB64-PE needed this: it ran `make` through the command interpreter
+        // and found it by this name. `fbc` starts its assembler and linker
+        // directly, so nothing here depends on it now — but a Windows process
+        // with no ComSpec is a strange thing to hand a compiler, and passing it
+        // through from our own environment costs nothing. Windows always sets
+        // it.
         if let Some(interp) = std::env::var_os("ComSpec") {
             env.push(("ComSpec".into(), interp));
         }
@@ -410,7 +417,7 @@ fn scrubbed_env(bundle: Option<&Bundle>, tmp: &Path) -> Vec<(OsString, OsString)
     }
     #[cfg(not(windows))]
     {
-        // A Linux QB64-PE drives the system's make and C++ compiler.
+        // A Linux `fbc` drives the system's assembler, linker and C compiler.
         path.push("/usr/local/bin:/usr/bin:/bin");
         env.push(("LANG".into(), OsString::from("C.UTF-8")));
         env.push(("LC_ALL".into(), OsString::from("C.UTF-8")));
@@ -448,7 +455,9 @@ const PATH_SEP: &str = ";";
 #[cfg(not(windows))]
 const PATH_SEP: &str = ":";
 
-/// `fbc -v` prints `QB64-PE Compiler V4.6.0`.
+/// Ask the compiler its own version, through a launcher where one is needed
+/// (a Windows bundle driven from Linux). The answer is parsed by `parse_version`
+/// below, which documents the line it comes in.
 fn query_version(fbc: &Path, launcher: Option<&str>) -> Option<String> {
     let mut cmd = match launcher {
         Some(l) => {
@@ -739,7 +748,7 @@ mod tests {
 
     #[test]
     fn a_compiler_under_a_vietnamese_path_is_run_from_a_copy_somewhere_ascii() {
-        // The case this exists for: on Windows QB64-PE is handed its own path
+        // The case this exists for: on Windows the compiler is handed its own path
         // through the ANSI code page, and `Nguyễn Văn A` does not survive it.
         let td = tempfile::tempdir().unwrap();
         let root = td
@@ -762,7 +771,7 @@ mod tests {
         assert!(ready.fbc().is_file());
         assert!(
             ready.fbc().to_string_lossy().is_ascii(),
-            "the copy is at a path QB64-PE can be given: {}",
+            "the copy is at a path the compiler can be given: {}",
             ready.fbc().display()
         );
         assert_eq!(ready.origin(), Some(tc.root()));

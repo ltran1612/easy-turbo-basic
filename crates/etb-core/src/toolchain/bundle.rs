@@ -1,4 +1,4 @@
-//! How to drive a bundled QB64 Phoenix Edition.
+//! How to drive a bundled FreeBASIC.
 //!
 //! Each bundle ships a `bundle.toml` saying where its `fbc` is, which of its
 //! directories the C++ compiler behind it needs on PATH, and — when the bundle
@@ -95,7 +95,7 @@ impl Bundle {
     }
 
     /// Load `bundle.toml` from a bundle root. `Ok(None)` means there is no
-    /// descriptor, which is fine: a plain QB64-PE tree needs no instructions.
+    /// descriptor, which is fine: a plain FreeBASIC tree needs no instructions.
     pub fn load(root: &Path) -> Result<Option<Self>> {
         let file = root.join(BUNDLE_FILE);
         let text = match std::fs::read_to_string(&file) {

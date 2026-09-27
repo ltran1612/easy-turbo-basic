@@ -73,8 +73,8 @@ pub struct DefFn {
 }
 
 impl DefFn {
-    /// The name it has in QB64: ours, with an explicit type.
-    pub fn qb64_name(&self) -> String {
+    /// The name it has in the compiled program: ours, with an explicit type.
+    pub fn fb_name(&self) -> String {
         format!("ETB_{}{}", self.base, self.ty.suffix())
     }
 }
@@ -89,10 +89,10 @@ pub struct Sub {
     pub end: Option<usize>,
     /// Variables the body uses without declaring them. Turbo Basic keeps
     /// their values between calls (the handbook, chapter 4: "Within procedure
-    /// definitions, the default is STATIC"); QB64 does not, unless told.
+    /// definitions, the default is STATIC"); FreeBASIC does not, unless told.
     pub statics: Vec<String>,
     /// Token indices of the brackets of each array parameter, `a(1)`, whose
-    /// number — Turbo Basic's count of dimensions — QB64 does not take.
+    /// number — Turbo Basic's count of dimensions — FreeBASIC does not take.
     pub array_params: Vec<(usize, usize)>,
 }
 
@@ -473,7 +473,7 @@ fn parse_def_header(l: &Line, s: Stmt) -> Option<Header> {
 
 /// Variables a body uses that it neither receives nor declares. Arrays only
 /// with `arrays`: a function shares the main program's arrays, while an array
-/// a procedure never dimensions is left to QB64's own default.
+/// a procedure never dimensions is left to the compiler's own default.
 fn undeclared(body: &[Line], params: &[Param], own_name: &str, arrays: bool) -> Vec<String> {
     // Names the body declares, as (BASE + suffix), whatever the form.
     let mut declared: HashSet<String> = HashSet::new();
@@ -485,7 +485,7 @@ fn undeclared(body: &[Line], params: &[Param], own_name: &str, arrays: bool) -> 
             let toks = l.stmt_toks(s);
             let Some(first) = toks.first() else { continue };
             // Declarations. DIM inside a function makes a local array, as it
-            // does in QB64. The first name of each item is what is declared;
+            // does in FreeBASIC. The first name of each item is what is declared;
             // anything in its brackets — `DIM a(n)` — is a use.
             if ["LOCAL", "STATIC", "SHARED", "DIM"]
                 .iter()
@@ -599,7 +599,7 @@ mod tests {
         assert_eq!(p.fns[0].ty, Ty::Sng);
         assert!(matches!(p.fns[0].kind, FnKind::Single { .. }));
         assert_eq!(p.fns[0].params[0].base, "degreesC");
-        assert_eq!(p.fns[1].qb64_name(), "ETB_FNFactorial#");
+        assert_eq!(p.fns[1].fb_name(), "ETB_FNFactorial#");
         match &p.fns[1].kind {
             FnKind::Multi { end, shared } => {
                 assert_eq!(*end, Some(6));

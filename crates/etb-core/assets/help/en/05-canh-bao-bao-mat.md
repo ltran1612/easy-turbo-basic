@@ -15,8 +15,8 @@ To continue:
 
 ## Antivirus removing part of the compiler
 
-The compiler is made of many small programs, among them `qb64pe.exe`,
-`clang.exe` and `mingw32-make.exe`. Some antivirus products occasionally
+The compiler is made of many small programs, among them `fbc.exe`,
+`gcc.exe` and `ld.exe`. Some antivirus products occasionally
 mistake these for something dangerous and delete them — and the same can happen
 to a program you have built and saved. This is a long-known false positive.
 

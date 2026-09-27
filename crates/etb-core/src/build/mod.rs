@@ -1,9 +1,15 @@
 //! The build state machine.
 //!
-//! One program, one pass: read and check the user's files, translate them
-//! from Turbo Basic into what QB64 Phoenix Edition accepts, and have QB64-PE
-//! turn that into a program. QB64 stops at its first error, so everything the
-//! translator can find is found first, and reported all together.
+//! One program, one pass: read and check the user's files, translate them from
+//! Turbo Basic into what FreeBASIC's `-lang qb` accepts, and have `fbc` turn
+//! that into a program.
+//!
+//! Everything the translator can find is found before the compiler runs and
+//! reported together. Not because the compiler stops at the first error — `fbc`
+//! reports as many as it can — but because what it reports is about the
+//! *translated* copy. A Turbo Basic construct this application refuses would
+//! otherwise reach the user as a compiler message about something they never
+//! wrote.
 
 pub mod diagnostics;
 pub mod exec;
@@ -34,7 +40,8 @@ pub enum BuildPhase {
     Preparing,
     /// Reading the user's files and translating them.
     Translating,
-    /// QB64-PE at work: its own translation to C++, then the C++ compiler.
+    /// `fbc` at work: on x86-64 its own translation to C, then GCC, then the
+    /// assembler and linker it drives.
     Compiling,
 }
 
@@ -244,7 +251,7 @@ fn build_inner(
     let mut cmd = toolchain.command(layout);
     cmd.args(fbargs::compile_args(&staging.main, &staging.prelude, &exe));
     let (code, raw) = exec::run_capture(cmd, COMPILER_OUTPUT_CAP, cancel)?;
-    // Stop pressed while QB64 was working. The killed process's non-zero exit
+    // Stop pressed while the compiler was working. The killed process's non-zero exit
     // is ours to interpret, not a failure to report.
     if cancel.load(Ordering::Relaxed) {
         return Ok(cancelled(Vec::new(), raw, findings));
@@ -264,8 +271,8 @@ fn build_inner(
     if code != Some(0) || !exe.exists() {
         let mut o = BuildOutcome::failure(FailedAt::Compile, diags, raw);
         o.findings = findings;
-        // QB64 failed and said nothing we could read, or said something about
-        // what we generated. Either way the user's code is not the one to
+        // The compiler failed and said nothing we could read, or said something
+        // about what we generated. Either way the user's code is not the one to
         // blame, and the message should not suggest it is.
         if o.diagnostics.is_empty() || o.diagnostics.iter().any(|d| d.ours) {
             o.internal_error = Some(
