@@ -1,0 +1,22 @@
+description = """
+Dividing by zero with `\\` or `MOD`.
+
+On the processor this is a fault, not an error: the program is killed where it
+stands, with no message, and whatever it had written is still in a buffer and
+lost. Turbo Basic stopped the program with "Division by zero" and everything
+already written was on disk (measured against the real compiler).
+
+So the divisor is checked first: the program says what happened, in both
+languages, closes its files and stops. The values either side of it are Turbo
+Basic's own, for `\\` and `MOD`, with negative and fractional operands.
+"""
+sources = ["CHIA0.BAS"]
+run = true
+stdout_contains = [
+  "CHIA 3 -3  4",
+  "DU   1 -1",
+  "Chia cho 0",
+  "Division by zero",
+]
+stdout_lacks = ["KHONG BAO GIO"]
+files_contain = [["KQ.TXT", "DA GHI TRUOC"]]

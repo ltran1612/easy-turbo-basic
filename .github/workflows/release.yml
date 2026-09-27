@@ -1,0 +1,295 @@
+name: Release
+
+# Publishes the application together with its compiler. The compiler is never in
+# git: it is built here from the pinned recipe in toolchain/, which is what keeps
+# the repository small and the artefact reproducible.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish, e.g. v0.1.0. Must match the workspace version."
+        required: true
+
+# Read by default; only the job that creates the release gets write. `package`
+# runs third-party build recipes and a `choco install`, and has no business
+# holding a token that can push to the repository.
+permissions:
+  contents: read
+
+# Two runs for one tag would race on asset upload and leave the release holding
+# a mix of both builds.
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Resolve the version once, here, and refuse a tag that disagrees with the
+  # workspace. Getting this wrong ships a `v0.2.0` release full of files that
+  # call themselves 0.1.0, and the mismatch is only visible after publishing.
+  plan:
+    name: Resolve and check the version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - id: v
+        shell: bash
+        # Through the environment, never interpolated into the script body: a ref
+        # name may contain `$`, a backtick or a quote, and a dispatch input may
+        # contain anything at all including a newline, which would otherwise let
+        # the caller write extra lines into $GITHUB_OUTPUT.
+        env:
+          RAW_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          tag="$RAW_TAG"
+          # Shape first. Without this, a dispatch of `0.1.0` publishes under a tag
+          # the `v*` trigger would never produce, and `v0.2.0-rc1` reaches NSIS's
+          # VIProductVersion, which must be four numbers and fails the build.
+          if ! printf '%s' "$tag" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::tag '$tag' must look like v1.2.3"
+            exit 1
+          fi
+          # One authority for the version, shared with `cargo xtask package`, so
+          # the installer and the archive can never disagree about their own name.
+          declared=$(cargo run -q -p xtask -- version)
+          if [ "${tag#v}" != "$declared" ]; then
+            echo "::error::tag $tag implies ${tag#v}, but the workspace declares $declared"
+            exit 1
+          fi
+          echo "tag=$tag"          >> "$GITHUB_OUTPUT"
+          echo "version=$declared" >> "$GITHUB_OUTPUT"
+          echo "publishing $tag (workspace version $declared)"
+
+  package:
+    name: Package (${{ matrix.target }})
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 22.04 on purpose: FreeBASIC's official Linux binary is linked
+          # against ncurses 5, and `libtinfo5` was dropped after this release.
+          - os: ubuntu-22.04
+            target: linux-x86_64
+            artifact: "*.tar.gz"
+          - os: windows-latest
+            target: windows-x86_64
+            artifact: "*.zip"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      # The packages are pinned by SHA-256 in the recipe, so a cache hit is
+      # exactly the same bytes a fresh download would be. Keyed on the recipe so
+      # changing a pin fetches again.
+      # The Linux compiler drives the system's linker and links against the
+      # system's X and ncurses libraries. The Windows one carries its own
+      # assembler and linker and needs none of this.
+      - name: What FreeBASIC links against
+        if: matrix.os != 'windows-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5 libncurses5-dev \
+            libx11-dev libxext-dev libxrender-dev libxrandr-dev libxpm-dev \
+            libxcursor-dev libxinerama-dev libgl1-mesa-dev xvfb
+
+      - name: Cache the pinned toolchain downloads
+        uses: actions/cache@v4
+        with:
+          path: target/toolchain-cache
+          key: toolchain-${{ matrix.target }}-${{ hashFiles(format('toolchain/{0}.toml', matrix.target)) }}
+          # The key covers the whole recipe, so editing a licence note in it would
+          # otherwise throw away every pinned download. A prefix restore keeps
+          # them: the packages are SHA-256 pinned, so a stale entry is either the
+          # same bytes or refetched by the checksum check.
+          restore-keys: toolchain-${{ matrix.target }}-
+
+      # Order matters: the fetch writes the integrity manifest, and the build
+      # embeds it. Building first would ship a binary that cannot verify its own
+      # toolchain — and the failure is silent, a "development build" that skips
+      # verification rather than an error.
+      - name: Fetch the toolchain bundle from the pinned recipe
+        run: cargo xtask fetch-toolchain --target ${{ matrix.target }}
+
+      - name: Prove the bundle before shipping it
+        run: cargo test -p etb-testkit --test corpus
+        env:
+          ETB_REQUIRE_TOOLCHAIN: "1"
+          ETB_TOOLCHAIN_BUNDLE: ${{ github.workspace }}/target/toolchain/${{ matrix.target }}
+
+      - name: Build the application
+        run: cargo build --release -p etb-gui -p etb-cli
+        env:
+          # A release that quietly loses its icon is the bug v0.1.0 shipped.
+          ETB_REQUIRE_ICON: "1"
+
+      - name: Package
+        run: cargo xtask package --target ${{ matrix.target }}
+
+      # Not a formality: this is the only step that proves the *packaged* tree
+      # matches the manifest the binary embeds. A prune that dropped a file, or a
+      # build that ran before the fetch, both surface here.
+      - name: The packaged application must verify its own toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          dist=$(ls -d target/dist/EasyTurboBasic-*-${{ matrix.target }})
+          # Named exactly, not globbed: `target/release/etb-cli*` also matches
+          # cargo's `etb-cli.d`, which the cleanup below would not remove, which the
+          # installer would then pack, and which would make the uninstaller's
+          # non-recursive RMDir fail and leave the install directory behind.
+          exe=etb-cli; [ -f "target/release/etb-cli.exe" ] && exe=etb-cli.exe
+          cp "target/release/$exe" "$dist/$exe"
+          # Captured rather than `| tee /dev/stderr |`: Git Bash on Windows has
+          # no /dev/stderr, and under pipefail tee's failure fails the step.
+          out=$( cd "$dist" && "./$exe" doctor )
+          printf '%s\n' "$out"
+          printf '%s\n' "$out" | grep -q "integrity  : ok"
+          rm -f "$dist/$exe"
+
+      - name: Build the Windows installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          choco install nsis --no-progress -y
+          $dist = (Get-ChildItem -Directory target/dist/EasyTurboBasic-*-windows-x86_64)[0].FullName
+
+          # Resolved explicitly. Two spellings do not work here and both fail
+          # only on the runner: "$env:ProgramFiles(x86)\NSIS\makensis.exe" ends
+          # the variable name at the paren, giving "C:\Program Files(x86)\..."
+          # with no space; and a bare `makensis` is not on PATH, because choco's
+          # nsis package installs no shim this session can see.
+          $nsis = @(
+            (Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'),
+            (Join-Path $env:ProgramFiles 'NSIS\makensis.exe')
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $nsis) { throw "makensis.exe not found after installing nsis" }
+          Write-Host "using $nsis"
+
+          & $nsis `
+            "/DSRC=$dist" "/DVERSION=${{ needs.plan.outputs.version }}" `
+            "/DICON=$PWD\packaging\windows\icon.ico" `
+            "/DOUT=$PWD\target\dist\EasyTurboBasic-${{ needs.plan.outputs.version }}-Setup.exe" `
+            packaging\windows\installer.nsi
+          if ($LASTEXITCODE -ne 0) { throw "makensis failed with $LASTEXITCODE" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            target/dist/${{ matrix.artifact }}
+            target/dist/*Setup.exe
+          if-no-files-found: error
+
+  corresponding-source:
+    name: Corresponding Source (GPL)
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # The GPL wants the source available from the same place as the binaries,
+      # so it is published with them rather than pointed at. Both targets: the
+      # obligation follows every binary we distribute, not just the ones built
+      # on this runner. FreeBASIC's compiler is GPL, and so are the assembler
+      # and linker its Windows release carries.
+      - name: Gather it
+        run: |
+          cargo xtask fetch-sources --target linux-x86_64
+          cargo xtask fetch-sources --target windows-x86_64
+      # Both targets are built from the same FreeBASIC source release, so half
+      # of what was just gathered is a byte-for-byte duplicate. Hard-linking
+      # the copies lets tar store the second as a link rather than twice.
+      - name: Archive
+        run: |
+          set -euo pipefail
+          cd target/corresponding-source
+          for f in windows-x86_64/*; do
+            twin="linux-x86_64/$(basename "$f")"
+            if [ -f "$twin" ] && cmp -s "$f" "$twin"; then
+              ln -f "$twin" "$f"
+              echo "deduplicated $(basename "$f")"
+            fi
+          done
+          tar czf ../dist-corresponding-source.tar.gz linux-x86_64 windows-x86_64
+          ls -l ../dist-corresponding-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corresponding-source
+          path: target/dist-corresponding-source.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish the release
+    needs: [plan, package, corresponding-source]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          # The action's own flattening, rather than a find|cp that would
+          # silently drop one of any two artifacts sharing a basename.
+          merge-multiple: true
+
+      # Checksummed so a download can be checked without trusting the transport.
+      - name: Checksum
+        run: |
+          set -euo pipefail
+          # Removed first and written outside the directory: `sha256sum * >
+          # SHA256SUMS` otherwise lists the file it is creating, if one is
+          # already there.
+          (cd dist && rm -f SHA256SUMS && sha256sum -- *) > SHA256SUMS
+          mv SHA256SUMS dist/
+          ls -l dist
+          cat dist/SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          # Explicit, because a workflow_dispatch run has no tag of its own and
+          # the action would otherwise have nothing to attach the release to.
+          tag_name: ${{ needs.plan.outputs.tag }}
+          # Without this a dispatch run creates the tag at the default branch's
+          # head, not at the commit that was built, and the release notes would
+          # describe a different tree from the binaries.
+          target_commitish: ${{ github.sha }}
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            ## Installing
+
+            **Windows:** download `EasyTurboBasic-…-Setup.exe` and run it. It installs
+            into your own user folder, so Windows will not ask for an administrator
+            password. The first time, Windows may warn that it does not recognise the
+            program — click **More info**, then **Run anyway**.
+
+            **Linux:** download the `.tar.gz`, extract it anywhere, and run
+            `easy-turbo-basic`.
+
+            The compiler is inside the download. Nothing else to install.
+
+            `SHA256SUMS` lists the checksum of every file here.
+
+            ## Source code for the bundled compiler
+
+            `dist-corresponding-source.tar.gz` holds the source for the FreeBASIC
+            compiler shipped in these downloads, and for the GNU assembler and linker
+            its Windows release carries, as the GPL requires. `SOURCES.md` inside it
+            says what covers what.
+
+            Programs you compile are yours: FreeBASIC's runtime is licensed with an
+            exception that places no licensing requirement on the programs it is
+            linked into.

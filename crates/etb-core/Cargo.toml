@@ -1,0 +1,41 @@
+[package]
+name = "etb-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core logic for Easy Turbo Basic: project model, build pipeline, interactive runner."
+
+[lints]
+workspace = true
+
+[dependencies]
+ureq.workspace = true
+serde.workspace = true
+toml.workspace = true
+uuid.workspace = true
+directories.workspace = true
+dunce.workspace = true
+which.workspace = true
+os_pipe.workspace = true
+crossbeam-channel.workspace = true
+sha2.workspace = true
+unicode-normalization.workspace = true
+encoding_rs.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+time.workspace = true
+tempfile.workspace = true
+
+# Signalling a process group, for the Stop button. Already in the tree by way of
+# `tempfile` and `which`, so this costs no new dependency — and its `killpg` is
+# a safe function, so `unsafe_code = "forbid"` stays exactly as it is. That lint
+# is a rule about the code in this workspace, not about what a dependency does
+# internally; every crate here including `std` has unsafe inside it.
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "1", features = ["process"] }
+
+
+[features]
+default = []

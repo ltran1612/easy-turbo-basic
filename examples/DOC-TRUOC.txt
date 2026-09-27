@@ -1,0 +1,57 @@
+ĐỌC TRƯỚC — Các chương trình ví dụ
+READ FIRST — The example programs
+====================================
+
+Bảy ví dụ, đi từ dễ đến khó. Mỗi ví dụ là một chương trình Turbo Basic viết
+theo kiểu thời DOS. Bấm "Thêm tệp…", chọn tệp, rồi bấm "Biên dịch chương trình".
+
+Seven examples, easiest first, each a Turbo Basic program written the way
+programs were in the DOS days. Click "Add files…", pick the file, then click
+"Compile program".
+
+01-CO-BAN.BAS
+   Nhập số liệu, tính toán, in kết quả bằng PRINT USING. Có số dòng, dấu ? thay
+   cho PRINT, và IF … THEN số dòng. Gõ chiều dài 3.5 và chiều rộng 2: diện tích
+   7.00 m2, chu vi 11.00 m.
+   Input, arithmetic, and PRINT USING, with line numbers, ? for PRINT and
+   IF … THEN to a line number. Type 3.5 and 2: area 7.00, perimeter 11.00.
+
+02-VONG-LAP.BAS
+   Vòng lặp FOR và DO WHILE, mảng DIM T(1:12), INCR và SELECT CASE.
+   FOR and DO WHILE loops, an array DIM T(1:12), INCR and SELECT CASE.
+
+03-HAM-VA-THU-TUC.BAS
+   Hàm tự định nghĩa bằng DEF FN (một dòng và nhiều dòng), thủ tục SUB gọi bằng
+   CALL, và hằng số có tên %SOLAN. Biến lan trong thủ tục Dem giữ giá trị giữa
+   các lần gọi, như trong Turbo Basic.
+   Functions with DEF FN (single- and multi-line), a SUB called with CALL, and
+   a named constant. The variable lan in Dem keeps its value between calls, as
+   it did in Turbo Basic.
+
+04-DOC-GHI-TEP.BAS
+   Ghi số liệu ra tệp SOLIEU.TXT, đọc lại, rồi in kết quả ra "máy in" LPT1.
+   Máy tính ngày nay không có cổng máy in, nên phần in ra được lưu thành tệp
+   MAY-IN-LPT1.TXT, ngay cạnh chương trình đã lưu.
+   Writes SOLIEU.TXT, reads it back, and prints to LPT1 — which, with no
+   printer port, becomes MAY-IN-LPT1.TXT beside the saved program.
+
+05-DO-THI.BAS
+   Vẽ đồ thị một dao động tắt dần bằng đồ hoạ SCREEN 9, trong cùng cửa sổ.
+   Nhấn một phím để kết thúc.
+   Draws a damped oscillation with SCREEN 9 graphics, in the same window.
+   Press a key to end it.
+
+06-NHIEU-TEP
+   Một chương trình gồm hai tệp: CHINH.BAS đưa HANGSO.BAS vào bằng $INCLUDE.
+   Thêm CẢ HAI tệp vào danh sách, CHINH.BAS đứng đầu. Gõ bán kính 2: diện tích
+   12.566 m2.
+   One program in two files: CHINH.BAS pulls in HANGSO.BAS with $INCLUDE. Add
+   BOTH files, CHINH.BAS first. Type 2: area 12.566.
+
+07-LOI-CO-Y.BAS
+   Cố ý viết sai ở dòng 6, để xem thông báo lỗi trông thế nào: nó chỉ đúng tệp,
+   đúng dòng, và đúng dòng chữ bạn đã viết. Sửa dòng 6 thành  Y = X * 2  rồi
+   biên dịch lại.
+   Wrong on purpose, on line 6, to show what an error looks like: the file,
+   the line, and the line as written. Correct line 6 to  Y = X * 2  and
+   compile again.

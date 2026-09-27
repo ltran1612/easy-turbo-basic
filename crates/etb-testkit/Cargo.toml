@@ -1,0 +1,36 @@
+[package]
+name = "etb-testkit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Fake FreeBASIC and fake interactive program, so the whole pipeline is testable with no compiler present."
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "fake_fbc"
+path = "src/bin/fake_fbc.rs"
+
+[[bin]]
+name = "fake_program"
+path = "src/bin/fake_program.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+# The same canonicaliser the application uses, so tests compare paths spelled
+# the way the product spells them.
+dunce.workspace = true
+etb-core.workspace = true
+crossbeam-channel.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+serde.workspace = true
+toml.workspace = true
+which.workspace = true
+# Reads the screenshot a window-mode test program leaves, to check what it drew.
+image = { version = "0.25.10", default-features = false, features = ["png", "bmp"] }

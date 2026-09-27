@@ -1,0 +1,8 @@
+description = """
+Text after the DOS end-of-file mark was never part of the program, then or
+now. It still builds, and the user is told the text is being left out.
+"""
+sources = ["DUOI.BAS"]
+run = true
+stdout_contains = ["phan chinh"]
+finding_keys = ["tr.warn.text_after_ctrl_z"]

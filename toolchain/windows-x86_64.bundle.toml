@@ -1,0 +1,11 @@
+# Written into the bundle by the toolchain fetch. Tells the application how to
+# drive this FreeBASIC: where its compiler is, and which of its directories
+# hold the assembler and linker it runs, which must be on its PATH.
+id = "freebasic-1.10.1-win64"
+version = "1.10.1"
+fbc = "fbc.exe"
+path_dirs = ["bin"]
+
+# fbc on Windows produces `program.exe` whatever machine drives it, so a build
+# has to look for that name even when this bundle is run from Linux.
+exe_suffix = ".exe"

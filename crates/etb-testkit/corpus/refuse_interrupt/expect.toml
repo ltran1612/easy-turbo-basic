@@ -1,0 +1,7 @@
+description = """
+A call straight into DOS cannot be translated. The translator says so, on
+its line, before the compiler is ever run.
+"""
+sources = ["DOS.BAS"]
+success = false
+finding_keys = ["tr.refuse.call_interrupt"]

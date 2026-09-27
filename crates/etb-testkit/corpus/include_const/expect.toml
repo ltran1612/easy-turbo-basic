@@ -1,0 +1,11 @@
+description = """
+$INCLUDE of a file of named constants; $IF on one of them; DIM with Turbo
+Basic's bounds, a(1:5); LBOUND(a(1)); a SUB taking an array, declared the
+Turbo Basic way, v(1); a SUB whose undeclared variable keeps its value from
+call to call, as Turbo Basic's procedures did (chapter 4: "the default is
+STATIC"); and a variable called `type`, which FreeBASIC reserves.
+"""
+sources = ["MAIN.BAS", "HANGSO.BAS"]
+run = true
+stdout_contains = ["BOUNDS 1  5", "SUM 150", "CALL 1", "CALL 2", "CALL 3", "DEBUG OFF", "TYPE 7"]
+stdout_lacks = ["DEBUG ON"]

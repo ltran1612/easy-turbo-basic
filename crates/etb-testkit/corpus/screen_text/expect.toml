@@ -1,0 +1,11 @@
+description = """
+The look of a DOS program: COLOR and LOCATE placing yellow text on blue.
+
+Checked as console output, not as a picture: FreeBASIC runs a text program in
+a console window, where QB64 gave every program a graphics window of its own.
+The colours and the placing are the console's to honour; what this asserts is
+that the program runs and puts the right text on the screen.
+"""
+sources = ["MANHINH.BAS"]
+run = true
+stdout_contains = ["KET QUA TINH TOAN", "e =  3.7 mm"]

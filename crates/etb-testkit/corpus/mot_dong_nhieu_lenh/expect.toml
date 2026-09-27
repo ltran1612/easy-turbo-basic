@@ -1,0 +1,13 @@
+description = """
+Several statements on one line, which is how these programs were written when
+screen space mattered: two named constants and two single-line DEF FNs sharing
+their lines, and a whole FOR loop on one.
+
+Each of those removals takes the colon beside it with it, and two removals on
+one line used to ask to remove the same colon — the second edit was dropped
+and half a definition stayed in the program. The user then saw an error on a
+line they had written perfectly correctly.
+"""
+sources = ["NHIEULENH.BAS"]
+run = true
+stdout_contains = ["CONST-1  0  50", "FN 49 8", "MANG 1 4 9"]

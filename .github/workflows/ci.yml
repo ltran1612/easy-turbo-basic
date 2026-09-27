@@ -1,0 +1,190 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  check:
+    name: Format, lints and hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets
+      # The structural safety rules, enforced rather than remembered.
+      - run: cargo xtask check-hygiene
+
+  # Fast feedback, and proof that everything below tier 2 needs nothing
+  # installed: the fake compiler carries the whole pipeline.
+  test-no-compiler:
+    name: Tests without a compiler
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  test-linux:
+    name: Tests (Linux, real FreeBASIC)
+    # 22.04 on purpose: FreeBASIC's official Linux binary is linked against
+    # ncurses 5, and `libtinfo5` was dropped after this release. Building fbc
+    # from source would avoid it and cost ten minutes a run.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # What fbc links against: its own runtime needs ncurses and X, and a
+      # program that draws needs the GL and X libraries at link time. xvfb is
+      # what lets such a program be run, and photographed, with no screen.
+      - name: What FreeBASIC links against
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5 libncurses5-dev \
+            libx11-dev libxext-dev libxrender-dev libxrandr-dev libxpm-dev \
+            libxcursor-dev libxinerama-dev libgl1-mesa-dev xvfb
+      # The archive, not the unpacked tree: a download is the slow part, and
+      # the key is the recipe, so a version bump fetches afresh.
+      - uses: actions/cache@v4
+        with:
+          path: target/toolchain-cache
+          key: toolchain-cache-linux-${{ hashFiles('toolchain/linux-x86_64.toml') }}
+      - name: Fetch the compiler from the pinned recipe
+        run: cargo xtask fetch-toolchain --target linux-x86_64
+      # Every tier. ETB_REQUIRE_TOOLCHAIN turns "no compiler, so skipped" into
+      # a failure, which is the only way a silent skip cannot hide a broken
+      # tier 2.
+      - name: Everything, against the real compiler
+        run: cargo test --workspace
+        env:
+          ETB_REQUIRE_TOOLCHAIN: "1"
+          ETB_TOOLCHAIN_BUNDLE: ${{ github.workspace }}/target/toolchain/linux-x86_64
+      - name: The integrity manifest must match what was just fetched
+        # `shell: bash` for the pipefail it brings: the default shell is `bash -e`
+        # without it, so the pipeline's status would be grep's alone and a doctor
+        # that printed the line and then failed would pass this step.
+        shell: bash
+        run: |
+          # Captured rather than `| tee /dev/stderr |`: Git Bash on Windows has
+          # no /dev/stderr, and under pipefail tee's failure fails the step.
+          out=$(cargo run -p etb-cli -- doctor)
+          printf '%s\n' "$out"
+          printf '%s\n' "$out" | grep -q 'integrity  : ok'
+          printf '%s\n' "$out" | grep -q 'smoke test : ok'
+        env:
+          ETB_TOOLCHAIN_BUNDLE: ${{ github.workspace }}/target/toolchain/linux-x86_64
+
+  test-windows:
+    name: Tests (Windows, the bundle we ship)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          path: target/toolchain-cache
+          key: toolchain-cache-windows-${{ hashFiles('toolchain/windows-x86_64.toml') }}
+      # This job is what validates the Windows bundle. The recipe is written
+      # and exercised on Linux, under wine; wine is not Windows, so until this
+      # is green the bundle is unproven. The Windows FreeBASIC carries its own
+      # assembler and linker, so nothing is installed here.
+      - name: Fetch the bundle from the pinned recipe
+        run: cargo xtask fetch-toolchain --target windows-x86_64
+      - name: Everything, against the bundle
+        run: cargo test --workspace
+        env:
+          ETB_REQUIRE_TOOLCHAIN: "1"
+          ETB_TOOLCHAIN_BUNDLE: ${{ github.workspace }}/target/toolchain/windows-x86_64
+      - name: The integrity manifest must match what was just fetched
+        shell: bash
+        run: |
+          out=$(cargo run -p etb-cli -- doctor)
+          printf '%s\n' "$out"
+          printf '%s\n' "$out" | grep -q 'integrity  : ok'
+          printf '%s\n' "$out" | grep -q 'smoke test : ok'
+        env:
+          ETB_TOOLCHAIN_BUNDLE: ${{ github.workspace }}/target/toolchain/windows-x86_64
+      - run: cargo build --release --workspace
+
+  # The installer is most of what a user ever touches, and it is built by one
+  # tool on one platform. Building it on every change is cheap; finding out at
+  # release time that a script edit broke it is not.
+  installer:
+    name: Installer (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          path: target/toolchain-cache
+          key: toolchain-cache-windows-${{ hashFiles('toolchain/windows-x86_64.toml') }}
+      # Order matters: the fetch writes the integrity manifest and the build
+      # embeds it, so building first would produce an application that cannot
+      # verify the compiler beside it — and the failure is quiet, a
+      # "development build" that skips the check rather than an error.
+      - name: Fetch the bundle from the pinned recipe
+        run: cargo xtask fetch-toolchain --target windows-x86_64
+      - name: Build the application
+        run: cargo build --release -p etb-gui -p etb-cli
+        env:
+          # A release that quietly loses its icon is a bug v0.1.0 shipped.
+          ETB_REQUIRE_ICON: "1"
+      - name: Package
+        run: cargo xtask package --target windows-x86_64 --no-archive
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          choco install nsis --no-progress -y
+          $dist = (Get-ChildItem -Directory target/dist/EasyTurboBasic-*-windows-x86_64)[0].FullName
+          $version = (cargo run -q -p xtask -- version)
+          # Resolved explicitly. Two spellings do not work here and both fail
+          # only on the runner: "$env:ProgramFiles(x86)\NSIS\makensis.exe" ends
+          # the variable name at the paren, giving "C:\Program Files(x86)\..."
+          # with no space; and a bare `makensis` is not on PATH, because choco's
+          # nsis package installs no shim this session can see.
+          $nsis = @(
+            (Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'),
+            (Join-Path $env:ProgramFiles 'NSIS\makensis.exe')
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $nsis) { throw "makensis.exe not found after installing nsis" }
+          & $nsis "/DSRC=$dist" "/DVERSION=$version" `
+            "/DICON=$PWD\packaging\windows\icon.ico" `
+            "/DOUT=$PWD\target\dist\EasyTurboBasic-$version-Setup.exe" `
+            packaging\windows\installer.nsi
+          if ($LASTEXITCODE -ne 0) { throw "makensis failed with $LASTEXITCODE" }
+      # Installed silently, as the release workflow's artefact would be, and
+      # then asked whether the compiler it carries is the one the application
+      # was built to expect. This is the only check that covers the installer
+      # and the manifest together.
+      - name: Install it, and have it verify its own compiler
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem target/dist/EasyTurboBasic-*-Setup.exe)[0].FullName
+          '{0:N1} MB installer' -f ((Get-Item $setup).Length / 1MB) | Write-Host
+          Start-Process -FilePath $setup -ArgumentList '/S' -Wait
+          $installed = Join-Path $env:LOCALAPPDATA 'Programs\Easy Turbo Basic'
+          if (-not (Test-Path $installed)) { throw "nothing installed at $installed" }
+          Copy-Item target/release/etb-cli.exe $installed
+          $out = & (Join-Path $installed 'etb-cli.exe') doctor
+          $out | Write-Host
+          if ($out -notmatch 'integrity  : ok') { throw "the installed compiler did not verify" }
+          if ($out -notmatch 'smoke test : ok') { throw "the installed compiler did not run" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: target/dist/EasyTurboBasic-*-Setup.exe
+          if-no-files-found: error

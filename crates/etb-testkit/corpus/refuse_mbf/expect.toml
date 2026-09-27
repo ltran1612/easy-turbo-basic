@@ -1,0 +1,10 @@
+description = """
+MKMS$ and CVMS read and write floating-point numbers the way Microsoft BASIC
+stored them inside random-access files. The compiler behind this application
+has no conversion for that format, and a number read the wrong way is a wrong
+answer rather than an error — so the build is refused, in the user's language,
+rather than quietly producing nonsense.
+"""
+sources = ["SONHIPHAN.BAS"]
+success = false
+finding_keys = ["tr.refuse.mbf"]

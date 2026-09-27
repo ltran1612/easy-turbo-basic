@@ -1,0 +1,8 @@
+description = """
+A mistake on line 3. The message must name the user's file and line 3 — not
+our staged copy, and not a line number shifted by anything we added.
+"""
+sources = ["LOI.BAS"]
+success = false
+error_in_file = "LOI.BAS"
+error_line = 3

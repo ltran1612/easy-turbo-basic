@@ -1,0 +1,76 @@
+# Windows x86_64: FreeBASIC, the compiler this application ships.
+#
+# On x86-64 FreeBASIC translates BASIC to C and has GCC compile it — there is
+# no assembly backend for this architecture — so the Windows release carries
+# GCC, GNU binutils and the MinGW-w64 runtime with it. A machine needs nothing
+# installed, which is the whole point of shipping it.
+#
+# Why FreeBASIC and not QB64 Phoenix Edition, which this used before: 37 MB
+# against 403 MB after pruning, no C++ toolchain to drive, no `make`, and no
+# 400 MB copy on a machine whose own path the compiler cannot be given. What
+# it costs is the shape of printed numbers — see docs/verification.md, V13.
+#
+# `-lang qb` is FreeBASIC's QuickBASIC dialect. It is not Turbo Basic: the
+# translator still closes that gap, and `DEF FN` is one of the things it must
+# close, because FreeBASIC has no `DEF FN` in any dialect.
+
+target = "windows-x86_64"
+fbc_version = "1.10.1"
+bundle_template = "windows-x86_64.bundle.toml"
+
+[archive]
+url = "https://downloads.sourceforge.net/project/fbc/FreeBASIC-1.10.1/Binaries-Windows/FreeBASIC-1.10.1-win64.zip"
+file = "FreeBASIC-1.10.1-win64.zip"
+sha256 = "cd64d45ba9356c10d8a06230104a52af3e547e6da9710c8e232e8549f96c4264"
+size = 37537506
+format = "zip"
+strip_prefix = "FreeBASIC-1.10.1-win64"
+
+[prune]
+keep = ["*"]
+drop = [
+  # FreeBASIC's own sample programs and its manual. A build opens neither, and
+  # together they are most of the archive's file count.
+  "examples/*",
+  "doc/*",
+]
+
+[mutable]
+# Nothing: fbc writes its output where it is told and leaves its own
+# directory alone. Kept, and kept empty, so the integrity check has an
+# explicit answer rather than an absent one — and so
+# `cargo test -p etb-testkit --test mutable` fails if that stops being true.
+paths = []
+
+[[source]]
+component = "FreeBASIC"
+version = "1.10.1"
+url = "https://downloads.sourceforge.net/project/fbc/FreeBASIC-1.10.1/Source/FreeBASIC-1.10.1-source.tar.xz"
+license = "GPL-2.0-or-later (compiler); LGPL/BSD for the runtime it links into programs"
+covers = ["fbc.exe", "lib (fbrt)", "inc"]
+note = "Programs built with fbc link its runtime, which is licensed so that the programs themselves carry no GPL obligation."
+
+# Read from the binaries themselves: bin/win64/gcc.exe reports 9.3.0, and
+# ld.exe carries the build path of binutils 2.34. They are a winlibs MinGW-w64
+# build, and the source is the GNU release each was built from.
+[[source]]
+component = "GCC"
+version = "9.3.0"
+url = "https://ftp.gnu.org/gnu/gcc/gcc-9.3.0/gcc-9.3.0.tar.xz"
+license = "GPL-3.0-or-later, with the GCC Runtime Library Exception"
+covers = ["bin/win64/gcc.exe", "bin/libexec/gcc"]
+note = "The Runtime Library Exception is why a program compiled with it carries no GPL obligation."
+
+[[source]]
+component = "GNU binutils"
+version = "2.34"
+url = "https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.xz"
+license = "GPL-3.0-or-later"
+covers = ["bin/win64/as.exe", "bin/win64/ld.exe", "bin/win64/ar.exe", "bin/win64/dlltool.exe"]
+
+[[source]]
+component = "MinGW-w64 runtime"
+version = "as shipped in the winlibs GCC 9.3.0 build"
+url = "https://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/"
+license = "permissive (MinGW-w64 runtime licence, public-domain-like)"
+covers = ["lib/win64 (the C runtime import libraries and startup files)"]

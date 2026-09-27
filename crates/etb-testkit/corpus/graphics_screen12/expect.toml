@@ -1,0 +1,11 @@
+description = """
+SCREEN 12 graphics, in the program's own window: a filled box, a circle, and
+PAINT filling it. The program waits for a key, as such programs did; the
+test answers it. Checked from a picture of the screen: 640 x 480, with the
+red box (191 x 141 pixels), the yellow circle, and the green fill.
+"""
+sources = ["VEHINH.BAS"]
+run = true
+window = true
+screen_size = [640, 480]
+screen_colors = [[170, 0, 0, 26000], [255, 255, 85, 300], [0, 170, 0, 25000]]

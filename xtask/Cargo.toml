@@ -1,0 +1,29 @@
+[package]
+name = "xtask"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Repository chores: hygiene checks, fetching and pruning FreeBASIC, manifests."
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+# For the glob matcher, so a recipe pattern means one thing here and in the
+# integrity check the application makes.
+etb-core.workspace = true
+flate2 = "1.1.10"
+# PNG to read the logo, ICO to write the icon. Both are in-tree format modules;
+# `ico = ["bmp", "png"]` and `bmp` has no dependencies, so this adds no crate the
+# build was not already compiling.
+image = { version = "0.25.10", default-features = false, features = ["png", "ico"] }
+serde = { workspace = true, features = ["derive"] }
+sha2.workspace = true
+tar = "0.4.46"
+toml.workspace = true
+ureq = "3.4.2"
+zip = "8.6.0"
+zstd = "0.14.0"

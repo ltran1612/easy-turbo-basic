@@ -1,0 +1,38 @@
+# Linux x86_64: FreeBASIC, from its own binary release.
+#
+# Development and CI only; releases are Windows. On x86-64 FreeBASIC translates
+# BASIC to C and has GCC compile it, and this build uses the system's GCC,
+# binutils and libraries rather than carrying its own, so the machine needs
+# (Fedora names):
+#   gcc binutils ncurses-devel libX11-devel libXext-devel libXrender-devel
+#   libXrandr-devel libXpm-devel libXcursor-devel libXinerama-devel mesa-libGL-devel
+# and, to run graphical programs in tests, xorg-x11-server-Xvfb.
+#
+# The binary release is built against ncurses 5, so `ncurses-compat-libs` is
+# needed too. A container is the tidy way: see README.md.
+
+target = "linux-x86_64"
+fbc_version = "1.10.1"
+bundle_template = "linux-x86_64.bundle.toml"
+
+[archive]
+url = "https://downloads.sourceforge.net/project/fbc/FreeBASIC-1.10.1/Binaries-Linux/FreeBASIC-1.10.1-linux-x86_64.tar.gz"
+file = "FreeBASIC-1.10.1-linux-x86_64.tar.gz"
+sha256 = "844aa9e997f9ff93566a28f05c502cf24f5aefefc64c4aca0e7a304994f508bc"
+size = 6852717
+format = "tar.gz"
+strip_prefix = "FreeBASIC-1.10.1-linux-x86_64"
+
+[prune]
+keep = ["*"]
+drop = ["examples/*", "doc/*"]
+
+[mutable]
+paths = []
+
+[[source]]
+component = "FreeBASIC"
+version = "1.10.1"
+url = "https://downloads.sourceforge.net/project/fbc/FreeBASIC-1.10.1/Source/FreeBASIC-1.10.1-source.tar.xz"
+license = "GPL-2.0-or-later (compiler); LGPL/BSD for the runtime it links into programs"
+covers = ["all"]

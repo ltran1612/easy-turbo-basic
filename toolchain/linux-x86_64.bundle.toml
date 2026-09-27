@@ -1,0 +1,5 @@
+# Written into the bundle by the toolchain fetch. The Linux FreeBASIC drives
+# the system's linker, so it needs nothing of its own on PATH.
+id = "freebasic-1.10.1-linux-x64"
+version = "1.10.1"
+fbc = "bin/fbc"

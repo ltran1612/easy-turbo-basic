@@ -1,0 +1,9 @@
+description = """
+A mistake inside an included file. The compiler reports it against the line of the
+$INCLUDE, in our staged copy; the message must name the included file, by
+the user's name for it, and the line in it.
+"""
+sources = ["CHINH.BAS", "PHU.BAS"]
+success = false
+error_in_file = "PHU.BAS"
+error_line = 2

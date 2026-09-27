@@ -1,0 +1,20 @@
+description = """
+What Turbo Basic does with a variable a SUB or a DEF FN uses without
+declaring it. Measured against the real TB 1.1 compiler under DOSBox, not
+taken from the handbook, which says both things (docs/verification.md, V1).
+
+Inside a SUB the variables are the procedure's own and they keep their
+values between calls — TB's STATIC — so the main program's X and N are
+untouched. Inside a multi-line DEF FN they are the main program's, so the
+function both reads and changes Y.
+"""
+sources = ["LUUTRU.BAS"]
+run = true
+stdout_contains = [
+  "INP 1 1",
+  "INP 2 2",
+  "MAIN 5 0",
+  "FN1 101",
+  "FN2 102",
+  "MAINY 102",
+]

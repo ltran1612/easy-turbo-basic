@@ -1,0 +1,25 @@
+description = """
+DEF FN, Turbo Basic's only way to write a function, which FreeBASIC does not
+have in any dialect. Single-line definitions move after the program; multi-line ones become
+FUNCTIONs in place. Arguments are passed by value (FNDummy changes its
+parameter; p does not change), a parameter hides the variable of the same
+name (x is still 56), undeclared variables are shared with the main program
+(scale, hits), LOCAL is local, EXIT DEF leaves early, and a line number on a
+header nothing jumps to is dropped. From the 1987 Owner's Handbook.
+
+`F2C 99.9999` is what Turbo Basic prints, digit for digit — it takes the
+decimal constant as double precision, which is why the translator marks it
+so (docs/verification.md, F14).
+"""
+sources = ["HAM.BAS"]
+run = true
+stdout_contains = [
+  "C2F 212",
+  "F2C 99.9999",
+  "AREA 6",
+  "XKEPT 56",
+  "FACT 3628800",
+  "NEG-1",
+  "BYVAL 6 1",
+  "SHARED 6 15 2",
+]

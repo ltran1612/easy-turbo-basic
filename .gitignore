@@ -1,0 +1,31 @@
+/target
+
+# The compiler is never in git. It is built into target/ from the pinned recipe
+# by `cargo xtask fetch-toolchain`, and published as a release artefact by CI.
+# These are here as a second line of defence: `cargo xtask check-hygiene` fails
+# the build if anything toolchain-shaped is tracked, wherever it lives.
+**/toolchain/internal/
+**/toolchain/licenses/
+**/toolchain/qb64pe
+*.7z
+*.exe
+*.dll
+*.so
+*.so.*
+*.a
+*.o
+*.ttf
+*.otf
+
+# Generated for one specific fetched bundle; a release regenerates it.
+/crates/etb-gui/assets/toolchain-manifest.txt
+
+**/*.rs.bk
+
+# Programs other people wrote are tested from where they live, never from here
+# (see crates/etb-testkit/tests/local_corpus.rs).
+/local-corpus/
+
+# The Windows test VM: disk images, firmware vars, ISOs and its own SSH key.
+# Scaffolding only — nothing in here is part of a release.
+/vm/

@@ -1,0 +1,12 @@
+description = """
+The shape of the DOS-era engineering code this exists for: line numbers mixed
+with unnumbered lines, `?` for PRINT, `print#` with the hash glued on (the compiler
+alone stops there with "Syntax error"), PRINT USING, results written to a
+file, and the printer opened through a variable holding "lpt1" — which has to
+become a file, since there is no printer port. CRLF, and a Ctrl-Z at the end.
+"""
+sources = ["TINHTOAN.BAS"]
+run = true
+stdin = "3.5\n2\nc\nKQ.TXT\nk\n"
+stdout_contains = ["Dien tich =  7.00 m2"]
+files_contain = [["KQ.TXT", "Dien tich =  7.00"], ["MAY-IN-LPT1.TXT", "KET QUA: 7"]]

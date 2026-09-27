@@ -1,0 +1,9 @@
+description = """
+Turbo Basic's own statements and functions that FreeBASIC spells differently
+or lacks: INCR and DECR, EXIT LOOP, EXIT IF (a GOTO to a label on its END IF),
+CEIL, LOG10 and EXP10.
+"""
+sources = ["VONG.BAS"]
+run = true
+stdout_contains = ["N 3", "K 6", "IN", "AFTER", "CEIL 3", "LOG 3.000", "EXP 100"]
+stdout_lacks = ["NOT HERE"]

@@ -1,0 +1,4 @@
+description = "The smallest program there is: it builds, runs and prints."
+sources = ["HELLO.BAS"]
+run = true
+stdout_contains = ["Xin chao"]

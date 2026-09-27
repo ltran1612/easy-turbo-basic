@@ -1,0 +1,49 @@
+[workspace]
+resolver = "2"
+members = ["crates/etb-core", "crates/etb-cli", "crates/etb-gui", "crates/etb-testkit", "xtask"]
+
+[workspace.package]
+version = "0.1.15"
+edition = "2021"
+rust-version = "1.98"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ltran1612/easy-turbo-basic"
+
+[workspace.dependencies]
+etb-core = { path = "crates/etb-core" }
+
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+uuid = { version = "1", features = ["v4", "serde"] }
+directories = "6.0.0"
+dunce = "1"
+which = "7"
+os_pipe = "1.2.3"
+crossbeam-channel = "0.5"
+sha2 = "0.10"
+unicode-normalization = "0.1.25"
+encoding_rs = "0.8"
+opener = "0.7"
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
+thiserror = "1"
+anyhow = "1"
+sys-locale = "0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+regex = "1"
+tempfile = "3"
+time = { version = "0.3", features = ["formatting", "parsing", "serde", "serde-well-known"] }
+
+# Forbidden, not merely denied: `forbid` cannot be lifted by an `#[allow]`
+# further in, so this is a guarantee about the whole workspace rather than a
+# default someone can quietly opt out of. Nothing here needs unsafe — the one
+# platform-specific thing we do, opening a file with a Windows share mode, has a
+# safe std API.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+panic = "unwind"

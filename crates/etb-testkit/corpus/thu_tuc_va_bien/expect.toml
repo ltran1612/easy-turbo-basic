@@ -1,0 +1,35 @@
+description = """
+The things FreeBASIC does not have and Turbo Basic does, each of which was
+found by a review to be mistranslated, and every one of them ordinary in a
+program of this age:
+
+- `SHARED x` inside a procedure, which is the handbook's own way of reaching
+  the main program's variable — FreeBASIC has no such statement, so it becomes
+  a module-level declaration;
+- `SUB name STATIC`, and a line number on the first line of a body;
+- a `SUB` with unsuffixed parameters under `DEFINT A-Z`, whose declaration is
+  compiled before the DEFINT is seen and must therefore spell the types out;
+- `EXIT LOOP` inside a `WHILE`, which must leave the WHILE and not whatever
+  `DO` encloses it;
+- a decimal constant compared against a single-precision variable, which is
+  *not* equal — Turbo Basic answers the same, because its constants are double
+  (measured; the handbook says otherwise). `SS SAI` is the faithful answer,
+  not a defect;
+- `CEIL` and `BIN$` called with a typed variable, which must be passed by
+  value, and BIN$ of a negative number, which is sixteen bits;
+- an array a function uses that the program never dimensions, which Turbo
+  Basic gives the bounds 0 to 10 and which was a segmentation fault.
+"""
+sources = ["THUTUC.BAS"]
+run = true
+stdout_contains = [
+  "TONG 7",
+  "DEM 1",
+  "DEM 2",
+  "VONG 1",
+  "VONG 2",
+  "SS SAI",
+  "CEIL 3",
+  "BIN 1111111111111011",
+  "MANG 0",
+]
