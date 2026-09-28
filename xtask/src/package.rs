@@ -11,6 +11,11 @@ use anyhow::{bail, Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// The rust triple a Windows package is cross-built with. Only used when the
+/// host is not Windows; on Windows, cargo's plain `target/<profile>` is the
+/// same thing.
+const CROSS_TRIPLE: &str = "x86_64-pc-windows-gnu";
+
 pub fn run(args: &[String]) -> Result<()> {
     let mut target: Option<String> = None;
     let mut profile = "release".to_string();
@@ -54,12 +59,43 @@ pub fn run(args: &[String]) -> Result<()> {
     } else {
         "easy-turbo-basic"
     };
-    let app = root.join("target").join(&profile).join(exe_name);
+    // Where cargo puts the binary for *this* target. `target/<profile>` is only
+    // right when the host is the target; a cross-build puts it under the rust
+    // triple. Looking in the wrong place did not fail, because an `.exe` left in
+    // `target/release` by an earlier session sat there waiting to be packaged:
+    // the installer came out carrying a three-day-old program, and nothing said
+    // so.
+    let cross = windows && !cfg!(windows);
+    let app = if cross {
+        root.join("target")
+            .join(CROSS_TRIPLE)
+            .join(&profile)
+            .join(exe_name)
+    } else {
+        root.join("target").join(&profile).join(exe_name)
+    };
     if !app.is_file() {
-        bail!(
-            "no application binary at {}.\n\nRun:  cargo build --{profile}",
-            app.display()
-        );
+        let how = if cross {
+            format!("cargo build --{profile} --target {CROSS_TRIPLE} -p etb-gui")
+        } else {
+            format!("cargo build --{profile} -p etb-gui")
+        };
+        bail!("no application binary at {}.\n\nRun:  {how}", app.display());
+    }
+    // A Windows package must contain a Windows program. Cheap, and it catches
+    // both a cross-build that silently produced a host binary and a stale file
+    // of the wrong kind sitting under the name we expect.
+    if windows {
+        let mut head = [0u8; 2];
+        use std::io::Read;
+        fs::File::open(&app)?.read_exact(&mut head)?;
+        if &head != b"MZ" {
+            bail!(
+                "{} is not a Windows executable (no MZ header), so the package \
+                 would carry a program that cannot run on Windows",
+                app.display()
+            );
+        }
     }
 
     let stem = format!("EasyTurboBasic-{version}-{target}");

@@ -32,7 +32,13 @@ ttf-parser = "0.25"
 etb-core.workspace = true
 
 # Embeds the icon as a Windows resource, so easy-turbo-basic.exe carries it in
-# Explorer and on the taskbar. Windows targets only; see build.rs.
-[target.'cfg(windows)'.build-dependencies]
+# Explorer and on the taskbar. See build.rs, which decides by the *target*.
+#
+# Not under `[target.'cfg(windows)'.build-dependencies]`, which is where this
+# started: a build dependency's `cfg` is matched against the host, so on a Linux
+# host the crate was absent and a Windows executable came out with no icon at
+# all. It is a build dependency of a few hundred kilobytes and it compiles
+# anywhere; build.rs returns early when the target is not Windows.
+[build-dependencies]
 winresource = "0.1"
 
